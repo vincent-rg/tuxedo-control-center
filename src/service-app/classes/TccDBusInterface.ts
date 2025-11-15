@@ -105,6 +105,8 @@ export class TccDBusData {
     public nvidiaPowerCTRLDefaultPowerLimit: number = 0;
     public nvidiaPowerCTRLMaxPowerLimit: number = 1000;
     public nvidiaPowerCTRLAvailable: boolean = false;
+    public staticCpuInfoJSON: string;
+    public runtimeCpuInfoJSON: string;
     constructor(numberFans: number) { this.fans = new Array<FanData>(numberFans).fill(undefined).map(fan => new FanData()); }
     // export() { return this.fans.map(fan => fan.export()); }
 }
@@ -194,6 +196,8 @@ export class TccDBusInterface extends dbus.interface.Interface {
     GetDefaultProfilesJSON() { return this.data.defaultProfilesJSON; }
     GetDefaultValuesProfileJSON() { return this.data.defaultValuesProfileJSON; }
     GetSettingsJSON() { return this.data.settingsJSON; }
+    GetStaticCpuInfoJSON() { return this.data.staticCpuInfoJSON; }
+    GetRuntimeCpuInfoJSON() { return this.data.runtimeCpuInfoJSON; }
     ODMProfilesAvailable() { return this.data.odmProfilesAvailable; }
     ODMPowerLimitsJSON() { return this.data.odmPowerLimitsJSON; }
     GetKeyboardBacklightCapabilitiesJSON() { return this.data.keyboardBacklightCapabilitiesJSON; }
