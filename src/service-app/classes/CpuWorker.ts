@@ -24,7 +24,7 @@ import { TuxedoControlCenterDaemon } from './TuxedoControlCenterDaemon';
 import { ITccProfile } from '../../common/models/TccProfile';
 import { ScalingDriver } from '../../common/classes/LogicalCpuController';
 import { TUXEDODevice } from '../../common/models/DefaultProfiles';
-import { IStaticCpuInfo, IStaticCpuData } from '../../common/models/TccCpuInfo';
+import { IStaticCpuInfo, IStaticCpuData, IRuntimeCpuInfo, IRuntimeCpuData } from '../../common/models/TccCpuInfo';
 
 export class CpuWorker extends DaemonWorker {
     private readonly basePath = PathConfig.SYS_CPU;
@@ -66,9 +66,33 @@ export class CpuWorker extends DaemonWorker {
         const cpuData: IStaticCpuData[] = [];
 
         for (const core of this.cpuCtrl.cores) {
-            const staticData = this.collectSingleStaticCpuData(core);
-            if (staticData !== null) {
+            try {
+                // Ensure CPU is online to read its data
+                // Note: cpu0 is always online and doesn't have online file
+                const isOnline = core.coreIndex === 0 ? true : core.online.readValue();
+
+                // Skip offline CPUs - we can't read their static data
+                // In future, we might want to temporarily online them to cache data
+                if (!isOnline) {
+                    this.tccd.logLine(`CpuWorker: Skipping offline CPU ${core.coreIndex} for static info collection`);
+                    continue;
+                }
+
+                const staticData: IStaticCpuData = {
+                    cpuId: core.coreIndex,
+                    cpuinfoMinFreq: core.cpuinfoMinFreq.readValue(),
+                    cpuinfoMaxFreq: core.cpuinfoMaxFreq.readValue(),
+                    scalingAvailableFrequencies: core.scalingAvailableFrequencies.readValueNT(),
+                    scalingAvailableGovernors: core.scalingAvailableGovernors.readValue(),
+                    energyPerformanceAvailablePreferences: core.energyPerformanceAvailablePreferences.readValueNT() || [],
+                    coreId: core.coreId.readValue(),
+                    threadSiblingsList: core.threadSiblingsList.readValue(),
+                    coreSiblingsList: core.coreSiblingsList.readValue()
+                };
+
                 cpuData.push(staticData);
+            } catch (err) {
+                this.tccd.logLine(`CpuWorker: Error collecting static info for CPU ${core.coreIndex} => ${err}`);
             }
         }
 
@@ -79,39 +103,81 @@ export class CpuWorker extends DaemonWorker {
     }
 
     /**
-     * Collect static CPU data for a single logical CPU.
-     * Returns null if CPU is offline (static data cannot be read from offline CPUs).
+     * Collect runtime CPU information (current frequencies, governor, online status).
+     * This data changes frequently and is collected on every work cycle.
+     *
+     * @returns Runtime CPU info for all CPUs with current timestamp
+     */
+    private collectRuntimeCpuInfo(): IRuntimeCpuInfo {
+        const cpuData: IRuntimeCpuData[] = [];
+
+        for (const core of this.cpuCtrl.cores) {
+            cpuData.push(this.collectSingleRuntimeCpuData(core));
+        }
+
+        return {
+            timestamp: Date.now(),
+            cpus: cpuData,
+            boost: this.cpuCtrl.boost.readValueNT() || false,
+            noTurbo: this.cpuCtrl.intelPstate.noTurbo.readValueNT() || false
+        };
+    }
+
+
+    /**
+     * Create runtime CPU data structure for an offline CPU.
+     * All runtime fields are set to null since they cannot be read when CPU is offline.
+     *
+     * @param cpuId Logical CPU ID
+     * @returns Runtime CPU data with online=false and null values
+     */
+    private createOfflineCpuData(cpuId: number): IRuntimeCpuData {
+        return {
+            cpuId: cpuId,
+            online: false,
+            scalingCurFreq: null,
+            scalingMinFreq: null,
+            scalingMaxFreq: null,
+            scalingGovernor: null,
+            energyPerformancePreference: null
+        };
+    }
+
+    /**
+     * Collect runtime CPU data for a single logical CPU.
+     * Handles both online and offline CPUs, returning appropriate data structure.
      *
      * @param core Logical CPU controller
-     * @returns Static CPU data or null if offline/error
+     * @returns Runtime CPU data
      */
-    private collectSingleStaticCpuData(core: any): IStaticCpuData | null {
+    private collectSingleRuntimeCpuData(core: any): IRuntimeCpuData {
         try {
-            // Ensure CPU is online to read its data
-            // Note: cpu0 is always online and doesn't have online file
-            const isOnline = core.coreIndex === 0 ? true : core.online.readValue();
+            // Check if CPU is online
+            // cpu0 doesn't have online file, it's always online
+            const isOnline = core.coreIndex === 0 ? true : (core.online.isAvailable() ? core.online.readValue() : false);
 
-            // Skip offline CPUs - we can't read their static data
-            if (!isOnline) {
-                this.tccd.logLine(`CpuWorker: Skipping offline CPU ${core.coreIndex} for static info collection`);
-                return null;
+            if (isOnline) {
+                // CPU is online - read all runtime data
+                return {
+                    cpuId: core.coreIndex,
+                    online: true,
+                    scalingCurFreq: core.scalingCurFreq.readValueNT(),
+                    scalingMinFreq: core.scalingMinFreq.readValueNT(),
+                    scalingMaxFreq: core.scalingMaxFreq.readValueNT(),
+                    scalingGovernor: core.scalingGovernor.readValueNT(),
+                    energyPerformancePreference: core.energyPerformancePreference.readValueNT()
+                };
+            } else {
+                // CPU is offline - can't read runtime data, return offline structure
+                return this.createOfflineCpuData(core.coreIndex);
             }
-
-            return {
-                cpuId: core.coreIndex,
-                cpuinfoMinFreq: core.cpuinfoMinFreq.readValue(),
-                cpuinfoMaxFreq: core.cpuinfoMaxFreq.readValue(),
-                scalingAvailableFrequencies: core.scalingAvailableFrequencies.readValueNT(),
-                scalingAvailableGovernors: core.scalingAvailableGovernors.readValue(),
-                energyPerformanceAvailablePreferences: core.energyPerformanceAvailablePreferences.readValueNT() || [],
-                coreId: core.coreId.readValue(),
-                threadSiblingsList: core.threadSiblingsList.readValue()
-            };
         } catch (err) {
-            this.tccd.logLine(`CpuWorker: Error collecting static info for CPU ${core.coreIndex} => ${err}`);
-            return null;
+            this.tccd.logLine(`CpuWorker: Error collecting runtime info for CPU ${core.coreIndex} => ${err}`);
+            // On error, return offline entry
+            return this.createOfflineCpuData(core.coreIndex);
         }
     }
+
 
     /**
      * Save current CPU online state and online all CPUs.
@@ -237,9 +303,16 @@ export class CpuWorker extends DaemonWorker {
     }
 
     public onWork() {
+        // Collect and expose runtime CPU information on every work cycle
+        try {
+            const runtimeCpuInfo = this.collectRuntimeCpuInfo();
+            this.tccd.dbusData.runtimeCpuInfoJSON = JSON.stringify(runtimeCpuInfo);
+        } catch (err) {
+            this.tccd.logLine(`CpuWorker: Error collecting runtime CPU info => ${err}`);
+        }
+
         // Check if current profile CPU values are actually set. If not
         // apply profile again
-
         try {
             if (this.tccd.settings.cpuSettingsEnabled && !this.validateCpuFreq()) {
                 this.tccd.logLine('CpuWorker: Incorrect settings, reapplying profile');
