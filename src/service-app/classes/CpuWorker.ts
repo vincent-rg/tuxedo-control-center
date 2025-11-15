@@ -24,6 +24,7 @@ import { TuxedoControlCenterDaemon } from './TuxedoControlCenterDaemon';
 import { ITccProfile } from '../../common/models/TccProfile';
 import { ScalingDriver } from '../../common/classes/LogicalCpuController';
 import { TUXEDODevice } from '../../common/models/DefaultProfiles';
+import { IStaticCpuInfo, IStaticCpuData } from '../../common/models/TccCpuInfo';
 
 export class CpuWorker extends DaemonWorker {
     private readonly basePath = PathConfig.SYS_CPU;
@@ -37,6 +38,12 @@ export class CpuWorker extends DaemonWorker {
      */
     private noEPPWriteQuirk: boolean;
 
+    /**
+     * Cached static CPU information (hardware limits, topology).
+     * Collected once on daemon startup to avoid repeated sysfs reads.
+     */
+    private cachedStaticCpuInfo: IStaticCpuInfo;
+
     constructor(tccd: TuxedoControlCenterDaemon) {
         super(10000, tccd);
         this.cpuCtrl = new CpuController(this.basePath);
@@ -49,7 +56,181 @@ export class CpuWorker extends DaemonWorker {
         }
     }
 
+    /**
+     * Collect static CPU information (hardware limits, topology).
+     * This data rarely changes so it's cached once on startup.
+     *
+     * @returns Static CPU info for all CPUs
+     */
+    private collectStaticCpuInfo(): IStaticCpuInfo {
+        const cpuData: IStaticCpuData[] = [];
+
+        for (const core of this.cpuCtrl.cores) {
+            const staticData = this.collectSingleStaticCpuData(core);
+            if (staticData !== null) {
+                cpuData.push(staticData);
+            }
+        }
+
+        return {
+            totalCpus: this.cpuCtrl.cores.length,
+            cpus: cpuData
+        };
+    }
+
+    /**
+     * Collect static CPU data for a single logical CPU.
+     * Returns null if CPU is offline (static data cannot be read from offline CPUs).
+     *
+     * @param core Logical CPU controller
+     * @returns Static CPU data or null if offline/error
+     */
+    private collectSingleStaticCpuData(core: any): IStaticCpuData | null {
+        try {
+            // Ensure CPU is online to read its data
+            // Note: cpu0 is always online and doesn't have online file
+            const isOnline = core.coreIndex === 0 ? true : core.online.readValue();
+
+            // Skip offline CPUs - we can't read their static data
+            if (!isOnline) {
+                this.tccd.logLine(`CpuWorker: Skipping offline CPU ${core.coreIndex} for static info collection`);
+                return null;
+            }
+
+            return {
+                cpuId: core.coreIndex,
+                cpuinfoMinFreq: core.cpuinfoMinFreq.readValue(),
+                cpuinfoMaxFreq: core.cpuinfoMaxFreq.readValue(),
+                scalingAvailableFrequencies: core.scalingAvailableFrequencies.readValueNT(),
+                scalingAvailableGovernors: core.scalingAvailableGovernors.readValue(),
+                energyPerformanceAvailablePreferences: core.energyPerformanceAvailablePreferences.readValueNT() || [],
+                coreId: core.coreId.readValue(),
+                threadSiblingsList: core.threadSiblingsList.readValue()
+            };
+        } catch (err) {
+            this.tccd.logLine(`CpuWorker: Error collecting static info for CPU ${core.coreIndex} => ${err}`);
+            return null;
+        }
+    }
+
+    /**
+     * Save current CPU online state and online all CPUs.
+     * This allows us to collect static info from all CPUs, even those currently offline.
+     *
+     * @returns Array of CPU indices that were online before this operation
+     */
+    private saveAndOnlineAllCpus(): number[] {
+        try {
+            // Read current online state
+            const savedOnlineState = this.cpuCtrl.online.readValue();
+            this.tccd.logLine(`CpuWorker: Saved online state: [${savedOnlineState.join(',')}]`);
+
+            // Online all CPUs (skip CPU 0 as it's always online)
+            this.tccd.logLine('CpuWorker: Temporarily onlining all CPUs for static info collection');
+            for (let i = 1; i < this.cpuCtrl.cores.length; i++) {
+                const core = this.cpuCtrl.cores[i];
+
+                // Check if online file is available and writable
+                if (!core.online.isAvailable() || !core.online.isWritable()) {
+                    this.tccd.logLine(`CpuWorker: Cannot control online state for CPU ${i} (not available or not writable)`);
+                    continue;
+                }
+
+                try {
+                    // Only try to online if currently offline
+                    if (!core.online.readValue()) {
+                        core.online.writeValue(true);
+                        this.tccd.logLine(`CpuWorker: Brought CPU ${i} online`);
+                    }
+                } catch (err) {
+                    this.tccd.logLine(`CpuWorker: Failed to online CPU ${i} => ${err}`);
+                }
+            }
+
+            return savedOnlineState;
+        } catch (err) {
+            this.tccd.logLine(`CpuWorker: Error saving/onlining CPUs => ${err}`);
+            // Return empty array on error - restoration will be skipped
+            return [];
+        }
+    }
+
+    /**
+     * Restore CPU online state to previously saved state.
+     *
+     * @param savedState Array of CPU indices that should be online
+     */
+    private restoreCpuOnlineState(savedState: number[]): void {
+        if (!savedState || savedState.length === 0) {
+            this.tccd.logLine('CpuWorker: No saved state to restore, skipping restoration');
+            return;
+        }
+
+        try {
+            this.tccd.logLine(`CpuWorker: Restoring previous online state: [${savedState.join(',')}]`);
+
+            // Restore state for each CPU (skip CPU 0 as it's always online)
+            for (let i = 1; i < this.cpuCtrl.cores.length; i++) {
+                const core = this.cpuCtrl.cores[i];
+
+                // Check if online file is available and writable
+                if (!core.online.isAvailable() || !core.online.isWritable()) {
+                    continue;
+                }
+
+                try {
+                    const shouldBeOnline = savedState.includes(i);
+                    const currentlyOnline = core.online.readValue();
+
+                    // Only write if state needs to change
+                    if (shouldBeOnline && !currentlyOnline) {
+                        core.online.writeValue(true);
+                        this.tccd.logLine(`CpuWorker: Restored CPU ${i} to online`);
+                    } else if (!shouldBeOnline && currentlyOnline) {
+                        core.online.writeValue(false);
+                        this.tccd.logLine(`CpuWorker: Restored CPU ${i} to offline`);
+                    }
+                } catch (err) {
+                    this.tccd.logLine(`CpuWorker: Failed to restore state for CPU ${i} => ${err}`);
+                }
+            }
+
+            this.tccd.logLine('CpuWorker: CPU online state restoration complete');
+        } catch (err) {
+            this.tccd.logLine(`CpuWorker: Error restoring CPU state => ${err}`);
+        }
+    }
+
     public onStart() {
+        // Collect and cache static CPU information on daemon startup
+        // Temporarily online all CPUs to ensure we get complete hardware info
+        let savedOnlineState: number[] = [];
+
+        try {
+            // Save current state and online all CPUs
+            savedOnlineState = this.saveAndOnlineAllCpus();
+
+            // Small delay to let CPUs stabilize after onlining
+            if (savedOnlineState.length > 0) {
+                // Sleep for 100ms
+                const startTime = Date.now();
+                while (Date.now() - startTime < 100) {
+                    // Busy wait (acceptable for short delay in startup)
+                }
+            }
+
+            // Collect static info (now includes all CPUs)
+            this.cachedStaticCpuInfo = this.collectStaticCpuInfo();
+            this.tccd.dbusData.staticCpuInfoJSON = JSON.stringify(this.cachedStaticCpuInfo);
+            this.tccd.logLine(`CpuWorker: Cached static CPU info for ${this.cachedStaticCpuInfo.cpus.length} CPUs`);
+        } catch (err) {
+            this.tccd.logLine(`CpuWorker: Error collecting static CPU info => ${err}`);
+        } finally {
+            // Always restore previous online state, even if collection failed
+            this.restoreCpuOnlineState(savedOnlineState);
+        }
+
+        // Apply active profile (which may change CPU online state again)
         if (this.tccd.settings.cpuSettingsEnabled) {
             this.applyCpuProfile(this.activeProfile);
         }
