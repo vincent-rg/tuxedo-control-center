@@ -66,39 +66,17 @@ export class CpuWorker extends DaemonWorker {
         const cpuData: IStaticCpuData[] = [];
 
         for (const core of this.cpuCtrl.cores) {
-            try {
-                // Ensure CPU is online to read its data
-                // Note: cpu0 is always online and doesn't have online file
-                const isOnline = core.coreIndex === 0 ? true : core.online.readValue();
-
-                // Skip offline CPUs - we can't read their static data
-                // In future, we might want to temporarily online them to cache data
-                if (!isOnline) {
-                    this.tccd.logLine(`CpuWorker: Skipping offline CPU ${core.coreIndex} for static info collection`);
-                    continue;
-                }
-
-                const staticData: IStaticCpuData = {
-                    cpuId: core.coreIndex,
-                    cpuinfoMinFreq: core.cpuinfoMinFreq.readValue(),
-                    cpuinfoMaxFreq: core.cpuinfoMaxFreq.readValue(),
-                    scalingAvailableFrequencies: core.scalingAvailableFrequencies.readValueNT(),
-                    scalingAvailableGovernors: core.scalingAvailableGovernors.readValue(),
-                    energyPerformanceAvailablePreferences: core.energyPerformanceAvailablePreferences.readValueNT() || [],
-                    coreId: core.coreId.readValue(),
-                    threadSiblingsList: core.threadSiblingsList.readValue(),
-                    coreSiblingsList: core.coreSiblingsList.readValue()
-                };
-
+            const staticData = this.collectSingleStaticCpuData(core);
+            if (staticData !== null) {
                 cpuData.push(staticData);
-            } catch (err) {
-                this.tccd.logLine(`CpuWorker: Error collecting static info for CPU ${core.coreIndex} => ${err}`);
             }
         }
 
         return {
             totalCpus: this.cpuCtrl.cores.length,
-            cpus: cpuData
+            cpus: cpuData,
+            boost: this.cpuCtrl.boost.readValueNT(),
+            noTurbo: this.cpuCtrl.intelPstate.noTurbo.readValueNT()
         };
     }
 
@@ -178,6 +156,41 @@ export class CpuWorker extends DaemonWorker {
         }
     }
 
+    /**
+     * Collect static CPU data for a single logical CPU.
+     * Returns null if CPU is offline (static data cannot be read from offline CPUs).
+     *
+     * @param core Logical CPU controller
+     * @returns Static CPU data or null if offline/error
+     */
+    private collectSingleStaticCpuData(core: any): IStaticCpuData | null {
+        try {
+            // Ensure CPU is online to read its data
+            // Note: cpu0 is always online and doesn't have online file
+            const isOnline = core.coreIndex === 0 ? true : core.online.readValue();
+
+            // Skip offline CPUs - we can't read their static data
+            if (!isOnline) {
+                this.tccd.logLine(`CpuWorker: Skipping offline CPU ${core.coreIndex} for static info collection`);
+                return null;
+            }
+
+            return {
+                cpuId: core.coreIndex,
+                cpuinfoMinFreq: core.cpuinfoMinFreq.readValue(),
+                cpuinfoMaxFreq: core.cpuinfoMaxFreq.readValue(),
+                scalingAvailableFrequencies: core.scalingAvailableFrequencies.readValueNT(),
+                scalingAvailableGovernors: core.scalingAvailableGovernors.readValue(),
+                energyPerformanceAvailablePreferences: core.energyPerformanceAvailablePreferences.readValueNT() || [],
+                scalingDriver: core.scalingDriver.readValueNT(),
+                coreId: core.coreId.readValue(),
+                threadSiblingsList: core.threadSiblingsList.readValue()
+            };
+        } catch (err) {
+            this.tccd.logLine(`CpuWorker: Error collecting static info for CPU ${core.coreIndex} => ${err}`);
+            return null;
+        }
+    }
 
     /**
      * Save current CPU online state and online all CPUs.

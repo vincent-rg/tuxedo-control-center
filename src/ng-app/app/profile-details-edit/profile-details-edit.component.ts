@@ -116,7 +116,21 @@ export class ProfileDetailsEditComponent implements OnInit, OnDestroy {
 
     private fansOffAvailableSubscription: Subscription = new Subscription();
 
-    public staticCpuInfo: IStaticCpuInfo;
+    private staticCpuInfo: IStaticCpuInfo;
+
+    // Compatibility wrapper for old template references
+    public get cpuInfo() {
+        if (!this.staticCpuInfo) {
+            return undefined;
+        }
+        return {
+            availableCores: this.staticCpuInfo.totalCpus,
+            minFreq: this.staticCpuInfo.cpus?.[0]?.cpuinfoMinFreq ?? 0,
+            maxFreq: this.staticCpuInfo.cpus?.[0]?.cpuinfoMaxFreq ?? 0,
+            boost: this.staticCpuInfo.boost
+        };
+    }
+
     public editProfile: boolean;
     public stateInputArray: IStateInfo[];
 

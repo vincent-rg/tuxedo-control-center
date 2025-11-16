@@ -26,6 +26,10 @@ export interface IStaticCpuInfo {
     totalCpus: number;
     /** Array of per-CPU static data */
     cpus: IStaticCpuData[];
+    /** Global boost status (AMD CPUs), undefined if not available */
+    boost?: boolean;
+    /** Global turbo disable flag (Intel CPUs), undefined if not available */
+    noTurbo?: boolean;
 }
 
 /**
@@ -45,6 +49,8 @@ export interface IStaticCpuData {
     scalingAvailableGovernors: string[];
     /** List of available energy performance preference values */
     energyPerformanceAvailablePreferences: string[];
+    /** CPU frequency scaling driver (e.g., 'intel_pstate', 'acpi-cpufreq') */
+    scalingDriver?: string;
     /** Physical core ID (multiple logical CPUs can share same coreId for HT/SMT) */
     coreId: number;
     /** List of logical CPU IDs that share the same physical core (hyperthreading siblings) */
