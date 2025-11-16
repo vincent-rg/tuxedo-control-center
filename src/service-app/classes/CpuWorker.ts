@@ -49,11 +49,7 @@ export class CpuWorker extends DaemonWorker {
         this.cpuCtrl = new CpuController(this.basePath);
 
         const dev = this.tccd.identifyDevice();
-        if ([TUXEDODevice.SIRIUS1602, TUXEDODevice.STELLSL15A06].includes(dev)) {
-            this.noEPPWriteQuirk = true;
-        } else {
-            this.noEPPWriteQuirk = false;
-        }
+        this.noEPPWriteQuirk = [TUXEDODevice.SIRIUS1602, TUXEDODevice.STELLSL15A06].includes(dev);
     }
 
     /**
@@ -296,9 +292,16 @@ export class CpuWorker extends DaemonWorker {
         }
     }
 
-    public onStart() {
-        // Collect and cache static CPU information on daemon startup
-        // Temporarily online all CPUs to ensure we get complete hardware info
+    /**
+     * Collect and cache static CPU information (only runs once).
+     * Temporarily onlines all CPUs to ensure complete hardware info is collected.
+     */
+    private updateStaticCpuInfo(): void {
+        // Skip if static info was already collected
+        if (this.cachedStaticCpuInfo) {
+            return;
+        }
+
         let savedOnlineState: number[] = [];
 
         try {
@@ -324,6 +327,11 @@ export class CpuWorker extends DaemonWorker {
             // Always restore previous online state, even if collection failed
             this.restoreCpuOnlineState(savedOnlineState);
         }
+    }
+
+    public onStart() {
+        // Collect and cache static CPU information (only on first call)
+        this.updateStaticCpuInfo();
 
         // Apply active profile (which may change CPU online state again)
         if (this.tccd.settings.cpuSettingsEnabled) {
