@@ -401,11 +401,19 @@ export class CpuDashboardComponent implements OnInit, OnDestroy {
     };
 
     public getCpuMaxFreq(): number {
-        if (!this.staticCpuInfo || !this.staticCpuInfo.cpus || this.staticCpuInfo.cpus.length === 0) {
+        if (!this.runtimeCpuInfo || !this.runtimeCpuInfo.cpus) {
             return 0;
         }
-        // Use CPU0's max frequency as reference
-        return this.staticCpuInfo.cpus[0].cpuinfoMaxFreq;
+        // Calculate average of online CPUs' current configured maximum frequency
+        // This shows utilization relative to current runtime limits, not hardware capability
+        const onlineCpus = this.runtimeCpuInfo.cpus.filter(core => core.online);
+        if (onlineCpus.length === 0) {
+            return 0;
+        }
+        const maxFreqSum = onlineCpus
+            .map((core) => core.scalingMaxFreq ?? 0)
+            .reduce((sum, freq) => sum + freq, 0);
+        return maxFreqSum / onlineCpus.length;
     }
 
     public formatIGpuFrequency = this.createFormatter(
