@@ -17,7 +17,6 @@
  * along with TUXEDO Control Center.  If not, see <https://www.gnu.org/licenses/>.
  */
 import { Injectable, Inject, LOCALE_ID } from '@angular/core';
-import { SysFsService } from './sys-fs.service';
 import { ElectronService } from 'ngx-electron';
 import { DecimalPipe } from '@angular/common';
 import * as https from 'https';
@@ -55,7 +54,6 @@ export class UtilsService {
   private localeId: string;
 
   constructor(
-    private sysfs: SysFsService,
     private electron: ElectronService,
     private decimalPipe: DecimalPipe,
     public overlayContainer: OverlayContainer,

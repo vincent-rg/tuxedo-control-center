@@ -25,9 +25,9 @@ import { ConfigService } from '../config.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormControl } from '@angular/forms';
 import { CompatibilityService } from '../compatibility.service';
-import { IGeneralCPUInfo, SysFsService } from '../sys-fs.service';
 import { Subscription } from 'rxjs';
 import { TccDBusClientService } from '../tcc-dbus-client.service';
+import { IStaticCpuInfo } from 'src/common/models/TccCpuInfo';
 import { TDPInfo } from '../../../native-lib/TuxedoIOAPI';
 
 @Component({
@@ -61,7 +61,7 @@ export class ProfileOverviewTileComponent implements OnInit {
 
     public isCustomProfile = true;
 
-    public cpuInfo: IGeneralCPUInfo;
+    public cpuInfo: IStaticCpuInfo;
 
     private subscriptions: Subscription = new Subscription();
 
@@ -73,6 +73,10 @@ export class ProfileOverviewTileComponent implements OnInit {
 
     public get hasMaxFreqWorkaround() { return this.compat.hasMissingMaxFreqBoostWorkaround; }
 
+    public get cpuMaxFreq(): number {
+        return this.cpuInfo?.cpus?.[0]?.cpuinfoMaxFreq ?? 0;
+    }
+
     constructor(
         private utils: UtilsService,
         private state: StateService,
@@ -80,12 +84,11 @@ export class ProfileOverviewTileComponent implements OnInit {
         private router: Router,
         private route: ActivatedRoute,
         public compat: CompatibilityService,
-        private sysfs: SysFsService,
         private tccDBus: TccDBusClientService
     ) { }
 
     ngOnInit() {
-        this.subscriptions.add(this.sysfs.generalCpuInfo.subscribe(cpuInfo => { this.cpuInfo = cpuInfo; }));
+        this.subscriptions.add(this.tccDBus.staticCpuInfo.subscribe(cpuInfo => { this.cpuInfo = cpuInfo; }));
 
         if (!this.addProfileTile) {
             if (this.selectStateControl === undefined) {

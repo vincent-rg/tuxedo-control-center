@@ -19,7 +19,6 @@
 import { Injectable } from "@angular/core";
 import { ScalingDriver } from "../../common/classes/LogicalCpuController";
 import { DMIController } from "../../common/classes/DMIController";
-import { SysFsService } from "./sys-fs.service";
 import { TccDBusClientService } from "./tcc-dbus-client.service";
 import { PathConfig } from "../../common/classes/PathConfig";
 import { IdGpuInfo, IiGpuInfo } from "src/common/models/TccGpuValues";
@@ -35,8 +34,7 @@ export class CompatibilityService {
     private hideCTGPValue: boolean;
 
     constructor(
-        private tccDbus: TccDBusClientService,
-        private sysfs: SysFsService,
+        private tccDbus: TccDBusClientService
     ) {
         // TODO: Manual read until general device id get merged
         const dmi = new DMIController(PathConfig.SYS_DMI);
@@ -257,12 +255,12 @@ export class CompatibilityService {
      */
     get hasMissingMaxFreqBoostWorkaround() {
         if (
-            this.sysfs.generalCpuInfo.value !== undefined &&
-            this.sysfs.logicalCoreInfo.value !== undefined
+            this.tccDbus.staticCpuInfo.value !== undefined &&
+            this.tccDbus.staticCpuInfo.value.cpus !== undefined &&
+            this.tccDbus.staticCpuInfo.value.cpus.length > 0
         ) {
-            const boost = this.sysfs.generalCpuInfo.value.boost;
-            const scalingDriver =
-                this.sysfs.logicalCoreInfo.value[0].scalingDriver;
+            const boost = this.tccDbus.staticCpuInfo.value.boost;
+            const scalingDriver = this.tccDbus.staticCpuInfo.value.cpus[0].scalingDriver;
             return (
                 boost !== undefined &&
                 scalingDriver === ScalingDriver.acpi_cpufreq

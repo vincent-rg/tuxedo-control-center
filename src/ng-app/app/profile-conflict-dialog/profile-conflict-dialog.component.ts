@@ -21,9 +21,10 @@ import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { ITccProfile } from 'src/common/models/TccProfile';
 import { FormControl, Validators } from '@angular/forms';
 import { UtilsService } from '../utils.service';
-import { IGeneralCPUInfo , SysFsService } from '../sys-fs.service';
 import { Subscription } from 'rxjs';
 import { CompatibilityService } from '../compatibility.service';
+import { TccDBusClientService } from '../tcc-dbus-client.service';
+import { IStaticCpuInfo } from 'src/common/models/TccCpuInfo';
 export interface IProfileConflictDialogResult {
     action: string;
     newName: string;
@@ -40,32 +41,36 @@ export class ProfileConflictComponent implements OnInit, OnDestroy {
     public variable;
     public rename = false;
     public inputNewProfileName: FormControl = new FormControl('', [Validators.required, Validators.minLength(1), Validators.maxLength(50)]);
-    
-    public cpuInfo: IGeneralCPUInfo;
+
+    public cpuInfo: IStaticCpuInfo;
     private subscriptions: Subscription = new Subscription();
     constructor(@Inject(MAT_DIALOG_DATA) public data: {
         oldProfile: ITccProfile,
         newProfile: ITccProfile
-    },  private mdDialogRef: MatDialogRef<ProfileConflictComponent>, 
+    },  private mdDialogRef: MatDialogRef<ProfileConflictComponent>,
         public compat: CompatibilityService,
         private utils: UtilsService,
-        private sysfs: SysFsService
+        private tccDBus: TccDBusClientService
         ) 
     { 
         mdDialogRef.disableClose = true;
     }
 
-    ngOnInit() 
+    ngOnInit()
     {
-        this.subscriptions.add(this.sysfs.generalCpuInfo.subscribe(cpuInfo => { this.cpuInfo = cpuInfo; }));
+        this.subscriptions.add(this.tccDBus.staticCpuInfo.subscribe(cpuInfo => { this.cpuInfo = cpuInfo; }));
      }
 
     ngOnDestroy() { }
-    
-    // we need those two functions to properly display the overview tiles 
+
+    // we need those two functions to properly display the overview tiles
     // for now they are dublicates of the ones in profile-overview-tile
     // maybe in the future we will put them in a more centralized spot
     public get hasMaxFreqWorkaround() { return this.compat.hasMissingMaxFreqBoostWorkaround; }
+
+    public get cpuMaxFreq(): number {
+        return this.cpuInfo?.cpus?.[0]?.cpuinfoMaxFreq ?? 0;
+    }
     
     public formatCpuFrequency(frequency: number): string {
         return this.utils.formatCpuFrequency(frequency);
