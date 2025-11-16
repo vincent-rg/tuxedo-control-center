@@ -21,6 +21,7 @@ import { FanData } from '../../service-app/classes/TccDBusInterface';
 import { TDPInfo } from '../../native-lib/TuxedoIOAPI';
 import { IDisplayFreqRes, IDisplayMode } from '../models/DisplayFreqRes';
 import { ChargeType } from './PowerSupplyController';
+import { IStaticCpuInfo, IRuntimeCpuInfo } from '../models/TccCpuInfo';
 
 export class TccDBusController {
     private busName = 'com.tuxedocomputers.tccd';
@@ -85,6 +86,22 @@ export class TccDBusController {
             return '';
         }
      }
+
+    async getStaticCpuInfoJSON(): Promise<string> {
+        try {
+            return await this.interface.GetStaticCpuInfoJSON();
+        } catch (err) {
+            return '';
+        }        
+    }
+
+    async getRuntimeCpuInfoJSON(): Promise<string> {
+        try {
+            return await this.interface.GetRuntimeCpuInfoJSON();
+        } catch (err) {
+            return '';
+        }        
+    }
 
     async getFanDataCPU(): Promise<FanData> {
         try {

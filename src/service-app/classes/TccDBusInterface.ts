@@ -307,6 +307,8 @@ TccDBusInterface.configureMembers({
         GetDefaultProfilesJSON: { outSignature: 's' },
         GetDefaultValuesProfileJSON: { outSignature: 's' },
         GetSettingsJSON: { outSignature: 's' },
+        GetStaticCpuInfoJSON: { outSignature: 's' },
+        GetRuntimeCpuInfoJSON: { outSignature: 's' },
         ODMProfilesAvailable: { outSignature: 'as' },
         ODMPowerLimitsJSON: { outSignature: 's' },
         GetKeyboardBacklightCapabilitiesJSON: { outSignature: 's' },

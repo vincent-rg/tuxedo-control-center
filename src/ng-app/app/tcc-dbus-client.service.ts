@@ -28,6 +28,7 @@ import { ICpuPower } from 'src/common/models/TccPowerSettings';
 import { IdGpuInfo, IiGpuInfo } from 'src/common/models/TccGpuValues';
 import { IDisplayFreqRes } from '../../common/models/DisplayFreqRes';
 import { TUXEDODevice } from 'src/common/models/DefaultProfiles';
+import { IStaticCpuInfo, IRuntimeCpuInfo } from 'src/common/models/TccCpuInfo';
 
 export interface IDBusFanData {
   cpu: FanData;
@@ -44,12 +45,15 @@ export class TccDBusClientService implements OnDestroy {
   private isAvailable: boolean;
   private timeout: NodeJS.Timeout;
   private updateInterval = 500;
+  private staticCpuInfoFetched = false;
 
   public available = new Subject<boolean>();
   public tuxedoWmiAvailable = new BehaviorSubject<boolean>(true);
   public fanHwmonAvailable = new BehaviorSubject<boolean>(true);
   public dataLoaded = false;
   public fanData = new BehaviorSubject<IDBusFanData>({cpu: new FanData(), gpu1: new FanData(), gpu2: new FanData() });
+  public staticCpuInfo = new BehaviorSubject<IStaticCpuInfo>(undefined);
+  public runtimeCpuInfo = new BehaviorSubject<IRuntimeCpuInfo>(undefined);
 
   public webcamSWAvailable = new BehaviorSubject<boolean>(undefined);
   public webcamSWStatus = new BehaviorSubject<boolean>(undefined);
@@ -97,6 +101,7 @@ export class TccDBusClientService implements OnDestroy {
 
   constructor(private utils: UtilsService) {
     this.tccDBusInterface = new TccDBusController();
+
     this.periodicUpdate();
     this.timeout = setInterval(() => { this.periodicUpdate(); }, this.updateInterval);
   }
@@ -123,6 +128,15 @@ export class TccDBusClientService implements OnDestroy {
 
     if (!this.isAvailable) {
         return;
+    }
+
+    // Fetch static CPU info once (it only changes on daemon restart)
+    if (!this.staticCpuInfoFetched) {
+        const staticCpuInfoJSON = await this.tccDBusInterface.getStaticCpuInfoJSON();
+        if (staticCpuInfoJSON) {
+            this.staticCpuInfo.next(JSON.parse(staticCpuInfoJSON));
+            this.staticCpuInfoFetched = true;
+        }
     }
 
     // Read and publish data (note: atm polled)
@@ -169,6 +183,11 @@ export class TccDBusClientService implements OnDestroy {
     const cpuPowerValuesJSON = await this.tccDBusInterface.getCpuPowerValuesJSON();
     if (cpuPowerValuesJSON) {
         this.cpuPower.next(JSON.parse(cpuPowerValuesJSON));
+    }
+
+    const runtimeCpuInfoJSON = await this.tccDBusInterface.getRuntimeCpuInfoJSON();
+    if(runtimeCpuInfoJSON) {
+        this.runtimeCpuInfo.next(JSON.parse(runtimeCpuInfoJSON));
     }
 
     this.webcamSWAvailable.next(await this.tccDBusInterface.webcamSWAvailable());

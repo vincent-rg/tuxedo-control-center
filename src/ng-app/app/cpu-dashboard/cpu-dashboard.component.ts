@@ -17,12 +17,6 @@
  * along with TUXEDO Control Center.  If not, see <https://www.gnu.org/licenses/>.
  */
 import { Component, OnInit, OnDestroy } from "@angular/core";
-import {
-    ILogicalCoreInfo,
-    IGeneralCPUInfo,
-    SysFsService,
-    IPstateInfo,
-} from "../sys-fs.service";
 import { Subscription } from "rxjs";
 import { UtilsService } from "../utils.service";
 import { TccDBusClientService, IDBusFanData } from "../tcc-dbus-client.service";
@@ -30,6 +24,7 @@ import { ITccProfile } from "src/common/models/TccProfile";
 import { StateService } from "../state.service";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ConfigService } from "../config.service";
+import { IStaticCpuInfo, IRuntimeCpuInfo, IRuntimeCpuData } from "src/common/models/TccCpuInfo";
 
 import { CompatibilityService } from "../compatibility.service";
 import { ICpuPower } from "src/common/models/TccPowerSettings";
@@ -47,9 +42,8 @@ import { ElectronService } from "ngx-electron";
     styleUrls: ["./cpu-dashboard.component.scss"],
 })
 export class CpuDashboardComponent implements OnInit, OnDestroy {
-    public cpuCoreInfo: ILogicalCoreInfo[];
-    public cpuInfo: IGeneralCPUInfo;
-    public pstateInfo: IPstateInfo;
+    public runtimeCpuInfo: IRuntimeCpuInfo;
+    public staticCpuInfo: IStaticCpuInfo;
     public usingFahrenheit: boolean;
     public activeCores: number;
     public activeScalingMinFreqs: string[];
@@ -102,7 +96,6 @@ export class CpuDashboardComponent implements OnInit, OnDestroy {
     public isX11: boolean;
 
     constructor(
-        private sysfs: SysFsService,
         private utils: UtilsService,
         private tccdbus: TccDBusClientService,
         private state: StateService,
@@ -210,11 +203,8 @@ export class CpuDashboardComponent implements OnInit, OnDestroy {
     }
 
     private subscribeToPstate(): void {
-        this.subscriptions.add(
-            this.sysfs.pstateInfo.subscribe((pstateInfo) => {
-                this.pstateInfo = pstateInfo;
-            })
-        );
+        // P-state info is now part of runtimeCpuInfo (noTurbo field)
+        // Subscribed to in subscribeToCpuInfo()
     }
 
     private setDGpuValues(dGpuInfo?: IdGpuInfo): void {
@@ -268,17 +258,19 @@ export class CpuDashboardComponent implements OnInit, OnDestroy {
             })
         );
         this.subscriptions.add(
-            this.sysfs.generalCpuInfo.subscribe((cpuInfo: IGeneralCPUInfo) => {
-                this.cpuInfo = cpuInfo;
+            this.tccdbus.staticCpuInfo.subscribe((staticCpuInfo: IStaticCpuInfo) => {
+                if (staticCpuInfo) {
+                    this.staticCpuInfo = staticCpuInfo;
+                }
             })
         );
         this.subscriptions.add(
-            this.sysfs.logicalCoreInfo.subscribe(
-                (coreInfo: ILogicalCoreInfo[]) => {
-                    this.cpuCoreInfo = coreInfo;
+            this.tccdbus.runtimeCpuInfo.subscribe((runtimeCpuInfo: IRuntimeCpuInfo) => {
+                if (runtimeCpuInfo) {
+                    this.runtimeCpuInfo = runtimeCpuInfo;
                     this.updateFrequencyData();
                 }
-            )
+            })
         );
     }
 
@@ -370,10 +362,15 @@ export class CpuDashboardComponent implements OnInit, OnDestroy {
     }
 
     private updateFrequencyData(): void {
-        const freqSum = this.cpuCoreInfo
+        if (!this.runtimeCpuInfo || !this.runtimeCpuInfo.cpus) {
+            return;
+        }
+        // Only use online CPUs for average calculation
+        const onlineCpus = this.runtimeCpuInfo.cpus.filter(core => core.online);
+        const freqSum = onlineCpus
             .map((core) => core.scalingCurFreq ?? 0)
             .reduce((sum, freq) => sum + freq, 0);
-        this.avgCpuFreq = freqSum / this.cpuCoreInfo.length;
+        this.avgCpuFreq = onlineCpus.length > 0 ? freqSum / onlineCpus.length : 0;
     }
 
     public formatValue = (
@@ -402,6 +399,14 @@ export class CpuDashboardComponent implements OnInit, OnDestroy {
     public formatCpuFrequency = (frequency: number): string => {
         return this.utils.formatCpuFrequency(frequency);
     };
+
+    public getCpuMaxFreq(): number {
+        if (!this.staticCpuInfo || !this.staticCpuInfo.cpus || this.staticCpuInfo.cpus.length === 0) {
+            return 0;
+        }
+        // Use CPU0's max frequency as reference
+        return this.staticCpuInfo.cpus[0].cpuinfoMaxFreq;
+    }
 
     public formatIGpuFrequency = this.createFormatter(
         (val) => val >= 0,

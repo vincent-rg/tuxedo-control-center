@@ -22,8 +22,8 @@ import { UtilsService } from '../utils.service';
 import { ITccSettings } from '../../../common/models/TccSettings';
 import { ConfigService } from '../config.service';
 import { StateService, IStateInfo } from '../state.service';
-import { SysFsService, IGeneralCPUInfo } from '../sys-fs.service';
 import { Subscription, fromEvent } from 'rxjs';
+import { IStaticCpuInfo } from '../../../common/models/TccCpuInfo';
 import { FormGroup, FormBuilder, Validators, FormControl, ValidatorFn, AbstractControl, FormArray } from '@angular/forms';
 import { DBusService } from '../dbus.service';
 import { MatInput } from '@angular/material/input';
@@ -116,7 +116,7 @@ export class ProfileDetailsEditComponent implements OnInit, OnDestroy {
 
     private fansOffAvailableSubscription: Subscription = new Subscription();
 
-    public cpuInfo: IGeneralCPUInfo;
+    public staticCpuInfo: IStaticCpuInfo;
     public editProfile: boolean;
     public stateInputArray: IStateInfo[];
 
@@ -163,7 +163,6 @@ export class ProfileDetailsEditComponent implements OnInit, OnDestroy {
         private utils: UtilsService,
         private config: ConfigService,
         private state: StateService,
-        private sysfs: SysFsService,
         private fb: FormBuilder,
         private dbus: DBusService,
         private tccDBus: TccDBusClientService,
@@ -173,9 +172,12 @@ export class ProfileDetailsEditComponent implements OnInit, OnDestroy {
 
     ngOnInit() {
         if (this.viewProfile === undefined) { return; }
-        this.subscriptions.add(this.sysfs.generalCpuInfo.subscribe(generalCpuInfo => {
-            this.cpuInfo = generalCpuInfo;
-            this.selectableFrequencies = generalCpuInfo.scalingAvailableFrequencies;
+        this.subscriptions.add(this.tccDBus.staticCpuInfo.subscribe(staticCpuInfo => {
+            if (staticCpuInfo && staticCpuInfo.cpus && staticCpuInfo.cpus.length > 0) {
+                this.staticCpuInfo = staticCpuInfo;
+                // Use CPU0's available frequencies as reference
+                this.selectableFrequencies = staticCpuInfo.cpus[0].scalingAvailableFrequencies;
+            }
         }));
 
         this.stateInputArray = this.state.getStateInputs();
