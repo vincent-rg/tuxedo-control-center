@@ -127,6 +127,17 @@ export class ConfigService implements OnDestroy {
         return $localize `:@@messageKeyboardBacklightControlOff:Keyboard backlight control deactivated in Settings→Global\u00A0profile\u00A0settings`;
     }
 
+    private getTccdExecPath(): string {
+        if (environment.production) {
+            return TccPaths.TCCD_EXEC_FILE;
+        } else {
+            // Previously used bundled version:
+            // return this.electron.process.cwd() + '/dist/tuxedo-control-center/data/service/tccd';
+            // Use unbundled node version in development to avoid pkg segfault
+            return 'node ' + this.electron.process.cwd() + '/dist/tuxedo-control-center/service-app/service-app/main.js';
+        }
+    }
+
     public getCustomProfiles(): ITccProfile[] {
         return this.customProfiles;
     }
@@ -150,13 +161,7 @@ export class ConfigService implements OnDestroy {
         newSettings.stateMap[stateId] = profileId;
         const tmpSettingsPath = '/tmp/tmptccsettings';
         this.config.writeSettings(newSettings, tmpSettingsPath);
-        let tccdExec: string;
-
-        if (environment.production) {
-            tccdExec = TccPaths.TCCD_EXEC_FILE;
-        } else {
-            tccdExec = this.electron.process.cwd() + '/dist/tuxedo-control-center/data/service/tccd';
-        }
+        const tccdExec = this.getTccdExecPath();
 
         const result = this.electron.ipcRenderer.sendSync(
             'exec-cmd-sync', 'pkexec ' + tccdExec + ' --new_settings ' + tmpSettingsPath
@@ -250,12 +255,7 @@ export class ConfigService implements OnDestroy {
     public pkexecWriteCustomProfiles(customProfiles: ITccProfile[]) {
         const tmpProfilesPath = '/tmp/tmptccprofiles';
         this.config.writeProfiles(customProfiles, tmpProfilesPath);
-        let tccdExec: string;
-        if (environment.production) {
-            tccdExec = TccPaths.TCCD_EXEC_FILE;
-        } else {
-            tccdExec = this.electron.process.cwd() + '/dist/tuxedo-control-center/data/service/tccd';
-        }
+        const tccdExec = this.getTccdExecPath();
         const result = this.electron.ipcRenderer.sendSync(
             'exec-cmd-sync', 'pkexec ' + tccdExec + ' --new_profiles ' + tmpProfilesPath
         );
@@ -279,12 +279,7 @@ export class ConfigService implements OnDestroy {
     private async pkexecWriteCustomProfilesAsync(customProfiles: ITccProfile[]) {
         const tmpProfilesPath = '/tmp/tmptccprofiles';
         this.config.writeProfiles(customProfiles, tmpProfilesPath);
-        let tccdExec: string;
-        if (environment.production) {
-            tccdExec = TccPaths.TCCD_EXEC_FILE;
-        } else {
-            tccdExec = this.electron.process.cwd() + '/dist/tuxedo-control-center/data/service/tccd';
-        }
+        const tccdExec = this.getTccdExecPath();
         try {
             await this.utils.execFile('pkexec ' + tccdExec + ' --new_profiles ' + tmpProfilesPath);
             return true;
@@ -344,12 +339,7 @@ export class ConfigService implements OnDestroy {
         return new Promise<boolean>(resolve => {
             const tmpWebcamPath = '/tmp/tmptccwebcam';
             this.config.writeWebcamSettings(settings, tmpWebcamPath);
-            let tccdExec: string;
-            if (environment.production) {
-                tccdExec = TccPaths.TCCD_EXEC_FILE;
-            } else {
-                tccdExec = this.electron.process.cwd() + '/dist/tuxedo-control-center/data/service/tccd';
-            }
+            const tccdExec = this.getTccdExecPath();
 
             this.utils.execFile(
                 'pkexec ' + tccdExec + ' --new_webcam ' + tmpWebcamPath
@@ -368,12 +358,7 @@ export class ConfigService implements OnDestroy {
             const tmpSettingsPath = '/tmp/tmptccsettings';
             this.config.writeProfiles(customProfiles, tmpProfilesPath);
             this.config.writeSettings(settings, tmpSettingsPath);
-            let tccdExec: string;
-            if (environment.production) {
-                tccdExec = TccPaths.TCCD_EXEC_FILE;
-            } else {
-                tccdExec = this.electron.process.cwd() + '/dist/tuxedo-control-center/data/service/tccd';
-            }
+            const tccdExec = this.getTccdExecPath();
             this.utils.execFile(
                 'pkexec ' + tccdExec + ' --new_profiles ' + tmpProfilesPath + ' --new_settings ' + tmpSettingsPath
             ).then(data => {

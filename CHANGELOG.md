@@ -1,5 +1,14 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+- Updated Node.js version from 14 to 18
+- Use unbundled node in development mode to avoid pkg segfault issues
+- Refactored config.service.ts to use getTccdExecPath() method for cleaner code
+- Keep @types/node at version 14 for TypeScript 4.0 compatibility (runtime uses Node 18)
+- Add OpenSSL legacy provider flag to Angular build scripts for Node 18 compatibility
+
 ## [2.1.21] - 2025-11-26
 ### Added
 - "TCC" keyword to desktop-file
