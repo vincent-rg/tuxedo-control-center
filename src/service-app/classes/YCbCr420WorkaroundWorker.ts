@@ -22,6 +22,7 @@ import * as fs from 'fs';
 import { DaemonWorker } from './DaemonWorker';
 import { TuxedoControlCenterDaemon } from './TuxedoControlCenterDaemon';
 import { fileOK } from '../../common/classes/Utils';
+import { PathConfig } from '../../common/classes/PathConfig';
 
 export class YCbCr420WorkaroundWorker extends DaemonWorker {
     constructor(tccd: TuxedoControlCenterDaemon) {
@@ -30,7 +31,7 @@ export class YCbCr420WorkaroundWorker extends DaemonWorker {
         if (this.tccd.settings.ycbcr420Workaround.length > 0) {
             let card: number = 0;
             let port: string = Object.keys(this.tccd.settings.ycbcr420Workaround[card])[0];
-            let path: string = "/sys/kernel/debug/dri/" + card + "/" + port + "/force_yuv420_output";
+            let path: string = PathConfig.SYS_KERNEL_DEBUG_DRI + "/" + card + "/" + port + "/force_yuv420_output";
             this.tccd.dbusData.forceYUV420OutputSwitchAvailable = fileOK(path);
         }
         else {
@@ -43,7 +44,7 @@ export class YCbCr420WorkaroundWorker extends DaemonWorker {
 
         for (let card = 0; card < this.tccd.settings.ycbcr420Workaround.length; card++) {
             for (let port in this.tccd.settings.ycbcr420Workaround[card]) {
-                let path: string = "/sys/kernel/debug/dri/" + card + "/" + port + "/force_yuv420_output"
+                let path: string = PathConfig.SYS_KERNEL_DEBUG_DRI + "/" + card + "/" + port + "/force_yuv420_output"
                 if (fileOK(path)) {
                     let oldValue: boolean = (fs.readFileSync(path).toString(undefined, undefined, 1) === "1");
                     if (oldValue != this.tccd.settings.ycbcr420Workaround[card][port]) {

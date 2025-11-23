@@ -3,6 +3,7 @@ import { AvailabilityService } from "src/common/classes/availability.service";
 import * as path from "path";
 import { amdDGpuDeviceIdString } from "src/common/classes/DeviceIDs";
 import { UtilsService } from "./utils.service";
+import { PathConfig } from "src/common/classes/PathConfig";
 
 @Injectable({
     providedIn: "root",
@@ -31,7 +32,7 @@ export class PowerStateService {
         }
 
         if (devicePattern) {
-            const grepCmd = `grep -lx '${devicePattern}' /sys/bus/pci/devices/*/uevent | sed 's|/uevent||'`;
+            const grepCmd = `grep -lx '${devicePattern}' ` + PathConfig.SYS_PCI_DEVICES + `/*/uevent | sed 's|/uevent||'`;
             return this.utils.execCmdSync(grepCmd).trim();
         }
         return undefined;

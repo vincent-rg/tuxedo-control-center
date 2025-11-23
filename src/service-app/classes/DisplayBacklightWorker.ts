@@ -18,13 +18,14 @@
  */
 import { DaemonWorker } from './DaemonWorker';
 import { DisplayBacklightController } from '../../common/classes/DisplayBacklightController';
+import { PathConfig } from '../../common/classes/PathConfig';
 
 import { TuxedoControlCenterDaemon } from './TuxedoControlCenterDaemon';
 
 export class DisplayBacklightWorker extends DaemonWorker {
 
     private controllers: DisplayBacklightController[];
-    private basePath = '/sys/class/backlight';
+    private basePath = PathConfig.SYS_BACKLIGHT;
     private useAutosave = false;
 
     constructor(tccd: TuxedoControlCenterDaemon) {

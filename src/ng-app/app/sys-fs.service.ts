@@ -21,6 +21,7 @@ import { CpuController } from '../../common/classes/CpuController';
 import { DisplayBacklightController } from '../../common/classes/DisplayBacklightController';
 import { BehaviorSubject } from 'rxjs';
 import { ScalingDriver } from '../../common/classes/LogicalCpuController';
+import { PathConfig } from '../../common/classes/PathConfig';
 
 @Injectable({
   providedIn: 'root'
@@ -37,9 +38,9 @@ export class SysFsService implements OnDestroy {
   public pstateInfo: BehaviorSubject<IPstateInfo>;
 
   constructor() {
-    this.cpu = new CpuController('/sys/devices/system/cpu');
+    this.cpu = new CpuController(PathConfig.SYS_CPU);
 
-    const displayBacklightControllerBasepath = '/sys/class/backlight';
+    const displayBacklightControllerBasepath = PathConfig.SYS_BACKLIGHT;
     const displayBacklightControllerNames = DisplayBacklightController.getDeviceList(displayBacklightControllerBasepath);
     this.displayBacklightControllers = [];
     for (const driverName of displayBacklightControllerNames) {
@@ -76,6 +77,7 @@ export class SysFsService implements OnDestroy {
     }
   }
 
+  // NOTE VRA: read from file written by daemon instead of /sys/devices/
   public getGeneralCpuInfo(): IGeneralCPUInfo {
     let cpuInfo: IGeneralCPUInfo;
     const scalingDriver = this.cpu.cores[0].scalingDriver.readValueNT();

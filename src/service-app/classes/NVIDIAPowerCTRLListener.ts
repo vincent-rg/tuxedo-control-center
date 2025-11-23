@@ -21,9 +21,10 @@ import { DaemonListener } from "./DaemonListener";
 import { TuxedoControlCenterDaemon } from './TuxedoControlCenterDaemon';
 import { SysFsPropertyInteger } from "../../common/classes/SysFsProperties";
 import { execCommandAsync } from "../../common/classes/Utils";
+import { PathConfig } from "../../common/classes/PathConfig";
 
 export class NVIDIAPowerCTRLListener extends DaemonListener {
-    private ctgpOffsetPath: string = "/sys/devices/platform/tuxedo_nvidia_power_ctrl/ctgp_offset";
+    private ctgpOffsetPath: string = PathConfig.SYS_TUXEDO_NVIDIA_POWER_CTRL_CTGP_OFFSET;
     private ctgpOffsetSysfsProp: SysFsPropertyInteger = new SysFsPropertyInteger(this.ctgpOffsetPath);
     private available: boolean = this.ctgpOffsetSysfsProp.isAvailable();
 

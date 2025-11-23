@@ -27,6 +27,7 @@ import {
 import * as path from "path";
 import { IntelRAPLController } from "../../common/classes/IntelRAPLController";
 import { PowerController } from "../../common/classes/PowerController";
+import { PathConfig } from "../../common/classes/PathConfig";
 import {
     amdDGpuDeviceIdString,
     amdIGpuDeviceIdString,
@@ -43,7 +44,7 @@ export class GpuInfoWorker extends DaemonWorker {
 
     private intelIGpuDrmPath: string;
     private intelRAPLGpu: IntelRAPLController = new IntelRAPLController(
-        "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/intel-rapl:0:1/"
+        PathConfig.SYS_INTEL_RAPL_IGPU + "/"
     );
     private intelPowerWorker: PowerController;
 
@@ -91,7 +92,7 @@ export class GpuInfoWorker extends DaemonWorker {
 
     private async getIntelIGpuDrmPath(): Promise<string | undefined> {
         const intelIGpuDevices = await execCommandAsync(
-            `grep -lP '${intelIGpuDeviceIdString}' /sys/bus/pci/devices/*/drm/card*/device/uevent | sed 's|/device/uevent$||'`
+            `grep -lP '${intelIGpuDeviceIdString}' ` + PathConfig.SYS_PCI_DEVICES + `/*/drm/card*/device/uevent | sed 's|/device/uevent$||'`
         );
         const amountIntelIGpuDevices = countLines(intelIGpuDevices);
 
@@ -209,7 +210,7 @@ export class GpuInfoWorker extends DaemonWorker {
 
     private async getAmdIGpuHwmonPath(): Promise<string | undefined> {
         const amdIGpuDevices = await execCommandAsync(
-            `grep -lP '${amdIGpuDeviceIdString}' /sys/class/hwmon/*/device/uevent | sed 's|/device/uevent$||'`
+            `grep -lP '${amdIGpuDeviceIdString}' ` + PathConfig.SYS_HWMON + `/*/device/uevent | sed 's|/device/uevent$||'`
         );
         const amountAmdIGpuDevices = countLines(amdIGpuDevices);
 
@@ -340,7 +341,7 @@ export class GpuInfoWorker extends DaemonWorker {
 
     private async getAmdDGpuHwmonPath(): Promise<string | undefined> {
         const amdDGpuDevices = await execCommandAsync(
-            `grep -lP '${amdDGpuDeviceIdString}' /sys/class/hwmon/*/device/uevent | sed 's|/device/uevent$||'`
+            `grep -lP '${amdDGpuDeviceIdString}' ` + PathConfig.SYS_HWMON + `/*/device/uevent | sed 's|/device/uevent$||'`
         );
         const amountAmdDGpuDevices = countLines(amdDGpuDevices);
 

@@ -20,6 +20,7 @@
 import { Menu, Tray } from "electron";
 import { TccProfile } from "../common/models/TccProfile";
 import { DMIController } from '../common/classes/DMIController';
+import { PathConfig } from '../common/classes/PathConfig';
 
 export class TccTray {
 
@@ -63,7 +64,7 @@ export class TccTray {
         );
 
         // TODO: Manual read until general device id get merged
-        const dmi = new DMIController('/sys/class/dmi/id');
+        const dmi = new DMIController(PathConfig.SYS_DMI);
         const deviceName = dmi.productSKU.readValueNT();
         const boardVendor = dmi.boardVendor.readValueNT();
         const chassisVendor = dmi.chassisVendor.readValueNT();

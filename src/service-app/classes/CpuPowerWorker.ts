@@ -22,6 +22,7 @@ import { TuxedoControlCenterDaemon } from "./TuxedoControlCenterDaemon";
 import { ICpuPower } from "../../common/models/TccPowerSettings";
 import { IntelRAPLController } from "../../common/classes/IntelRAPLController";
 import { PowerController } from "../../common/classes/PowerController";
+import { PathConfig } from "../../common/classes/PathConfig";
 
 export class CpuPowerWorker extends DaemonWorker {
     private RAPLConstraint0Status: boolean = false;
@@ -29,7 +30,7 @@ export class CpuPowerWorker extends DaemonWorker {
     private RAPLConstraint2Status: boolean = false;
 
     private intelRAPL = new IntelRAPLController(
-        "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/"
+        PathConfig.SYS_INTEL_RAPL_CPU + "/"
     );
     private powerWorker: PowerController;
 

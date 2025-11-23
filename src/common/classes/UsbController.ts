@@ -20,11 +20,12 @@ import { SysFsController } from './SysFsController';
 import { SysFsPropertyIntegerHex, SysFsPropertyString } from './SysFsProperties';
 import * as path from 'path';
 import * as fs from 'fs';
+import { PathConfig } from './PathConfig';
 
 export class UsbController extends SysFsController {
 
-    private static readonly USB_DEVICES_PATH = '/sys/bus/usb/devices';
-    private static readonly USB_DRIVER_PATH = '/sys/bus/usb/drivers/usb';
+    private static readonly USB_DEVICES_PATH = PathConfig.SYS_USB_DEVICES;
+    private static readonly USB_DRIVER_PATH = PathConfig.SYS_USB_DRIVERS;
 
     public readonly idProduct = new SysFsPropertyIntegerHex(path.join(this.devicePath, 'idProduct'));
     public readonly idVendor = new SysFsPropertyIntegerHex(path.join(this.devicePath, 'idVendor'));

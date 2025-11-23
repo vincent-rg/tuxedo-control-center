@@ -26,20 +26,21 @@ import {
     SysFsPropertyStringList,
 } from "../../common/classes/SysFsProperties";
 import { TUXEDODevice } from '../../common/models/DefaultProfiles';
+import { PathConfig } from '../../common/classes/PathConfig';
 
 export class ODMProfileWorker extends DaemonWorker {
     private static tuxedoPlatformProfile = new SysFsPropertyString(
-        "/sys/bus/platform/devices/tuxedo_platform_profile/platform_profile"
+        PathConfig.SYS_TUXEDO_PLATFORM_PROFILE
     );
     private static tuxedoPlatformProfileChoices = new SysFsPropertyStringList(
-        "/sys/bus/platform/devices/tuxedo_platform_profile/platform_profile_choices"
+        PathConfig.SYS_TUXEDO_PLATFORM_PROFILE_CHOICES
     );
 
     private static platformProfile = new SysFsPropertyString(
-        "/sys/firmware/acpi/platform_profile"
+        PathConfig.SYS_ACPI_PLATFORM_PROFILE
     );
     private static platformProfileChoices = new SysFsPropertyStringList(
-        "/sys/firmware/acpi/platform_profile_choices"
+        PathConfig.SYS_ACPI_PLATFORM_PROFILE_CHOICES
     );
 
     constructor(tccd: TuxedoControlCenterDaemon) {

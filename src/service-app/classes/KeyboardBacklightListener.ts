@@ -24,13 +24,14 @@ import { DaemonListener } from "./DaemonListener";
 import { TuxedoControlCenterDaemon } from './TuxedoControlCenterDaemon';
 import { KeyboardBacklightColorModes, KeyboardBacklightCapabilitiesInterface, KeyboardBacklightStateInterface } from '../../common/models/TccSettings';
 import { fileOK, fileOKAsync, getDirectories, getSymbolicLinks } from '../../common/classes/Utils';
+import { PathConfig } from '../../common/classes/PathConfig';
 
 export class KeyboardBacklightListener extends DaemonListener {
-    protected ledsWhiteOnly: string = "/sys/devices/platform/tuxedo_keyboard/leds/white:kbd_backlight";
-    protected ledsWhiteOnlyNB05: string = "/sys/bus/platform/devices/tuxedo_nb05_kbd_backlight/leds/white:kbd_backlight";
-    protected ledsRGBZones: Array<string> = ["/sys/devices/platform/tuxedo_keyboard/leds/rgb:kbd_backlight",
-                                             "/sys/devices/platform/tuxedo_keyboard/leds/rgb:kbd_backlight_1",
-                                             "/sys/devices/platform/tuxedo_keyboard/leds/rgb:kbd_backlight_2"];
+    protected ledsWhiteOnly: string = PathConfig.SYS_TUXEDO_KEYBOARD_LEDS_WHITE;
+    protected ledsWhiteOnlyNB05: string = PathConfig.SYS_TUXEDO_NB05_KBD_BACKLIGHT;
+    protected ledsRGBZones: Array<string> = [PathConfig.SYS_TUXEDO_KEYBOARD_LEDS_RGB,
+                                             PathConfig.SYS_TUXEDO_KEYBOARD_LEDS_RGB_1,
+                                             PathConfig.SYS_TUXEDO_KEYBOARD_LEDS_RGB_2];
     protected keyboardBacklightCapabilities: KeyboardBacklightCapabilitiesInterface = {} as KeyboardBacklightCapabilitiesInterface;
     protected sysDBusUPowerProps: dbus.ClientInterface = {} as dbus.ClientInterface;
     protected sysDBusUPowerKbdBacklightInterface: dbus.ClientInterface = {} as dbus.ClientInterface;
@@ -215,10 +216,10 @@ export class KeyboardBacklightListener extends DaemonListener {
         let iteKeyboardDevices: Array<string>;
 
         iteKeyboardDevices =
-            getSymbolicLinks("/sys/bus/hid/drivers/tuxedo-keyboard-ite")
-                .filter(name => fileOK("/sys/bus/hid/drivers/tuxedo-keyboard-ite/" + name + "/leds"));
+            getSymbolicLinks(PathConfig.SYS_HID_TUXEDO_KEYBOARD_ITE)
+                .filter(name => fileOK(PathConfig.SYS_HID_TUXEDO_KEYBOARD_ITE + "/" + name + "/leds"));
         for (const iteKeyboardDevice of iteKeyboardDevices) {
-            let path = "/sys/bus/hid/drivers/tuxedo-keyboard-ite/" + iteKeyboardDevice + "/leds"
+            let path = PathConfig.SYS_HID_TUXEDO_KEYBOARD_ITE + "/" + iteKeyboardDevice + "/leds"
             if (fileOK(path)) {
                 ledsPerKey = ledsPerKey.concat(
                     getDirectories(path)
@@ -229,10 +230,10 @@ export class KeyboardBacklightListener extends DaemonListener {
         }
 
         iteKeyboardDevices =
-            getSymbolicLinks("/sys/bus/hid/drivers/ite_829x")
-                .filter(name => fileOK("/sys/bus/hid/drivers/ite_829x/" + name + "/leds"));
+            getSymbolicLinks(PathConfig.SYS_HID_ITE_829X)
+                .filter(name => fileOK(PathConfig.SYS_HID_ITE_829X + "/" + name + "/leds"));
         for (const iteKeyboardDevice of iteKeyboardDevices) {
-            let path = "/sys/bus/hid/drivers/ite_829x/" + iteKeyboardDevice + "/leds"
+            let path = PathConfig.SYS_HID_ITE_829X + "/" + iteKeyboardDevice + "/leds"
             if (fileOK(path)) {
                 ledsPerKey = ledsPerKey.concat(
                     getDirectories(path)
@@ -243,10 +244,10 @@ export class KeyboardBacklightListener extends DaemonListener {
         }
 
         iteKeyboardDevices =
-            getSymbolicLinks("/sys/bus/hid/drivers/ite_8291")
-                .filter(name => fileOK("/sys/bus/hid/drivers/ite_8291/" + name + "/leds"));
+            getSymbolicLinks(PathConfig.SYS_HID_ITE_8291)
+                .filter(name => fileOK(PathConfig.SYS_HID_ITE_8291 + "/" + name + "/leds"));
         for (const iteKeyboardDevice of iteKeyboardDevices) {
-            let path = "/sys/bus/hid/drivers/ite_8291/" + iteKeyboardDevice + "/leds"
+            let path = PathConfig.SYS_HID_ITE_8291 + "/" + iteKeyboardDevice + "/leds"
             if (fileOK(path)) {
                 ledsPerKey = ledsPerKey.concat(
                     getDirectories(path)
@@ -257,10 +258,10 @@ export class KeyboardBacklightListener extends DaemonListener {
         }
 
         iteKeyboardDevices =
-            getSymbolicLinks("/sys/bus/platform/drivers/tuxedo_nb04_kbd_backlight")
-                .filter(name => fileOK("/sys/bus/platform/drivers/tuxedo_nb04_kbd_backlight/" + name + "/leds"));
+            getSymbolicLinks(PathConfig.SYS_PLATFORM_TUXEDO_NB04_KBD_BACKLIGHT)
+                .filter(name => fileOK(PathConfig.SYS_PLATFORM_TUXEDO_NB04_KBD_BACKLIGHT + "/" + name + "/leds"));
         for (const iteKeyboardDevice of iteKeyboardDevices) {
-            let path = "/sys/bus/platform/drivers/tuxedo_nb04_kbd_backlight/" + iteKeyboardDevice + "/leds"
+            let path = PathConfig.SYS_PLATFORM_TUXEDO_NB04_KBD_BACKLIGHT + "/" + iteKeyboardDevice + "/leds"
             if (fileOK(path)) {
                 ledsPerKey = ledsPerKey.concat(
                     getDirectories(path)

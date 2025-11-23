@@ -19,12 +19,13 @@
 import * as path from 'path';
 import { ProfileStates } from '../models/TccSettings';
 import { PowerSupplyController } from './PowerSupplyController';
+import { PathConfig } from './PathConfig';
 
 export function determineState(): ProfileStates {
     // Default state
     let state: ProfileStates = ProfileStates.AC;
 
-    const pathPowerSupplies = '/sys/class/power_supply';
+    const pathPowerSupplies = PathConfig.SYS_POWER_SUPPLY;
     const powerSupplyNames = PowerSupplyController.getDeviceList(pathPowerSupplies);
     const powerSupplies: PowerSupplyController[] = [];
 

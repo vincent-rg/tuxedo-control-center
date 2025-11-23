@@ -1,7 +1,8 @@
 import { SysFsPropertyBoolean } from "./SysFsProperties";
+import { PathConfig } from "./PathConfig";
 
 export class FnLockController {
-    fnLock = new SysFsPropertyBoolean("/sys/devices/platform/tuxedo_keyboard/fn_lock");
+    fnLock = new SysFsPropertyBoolean(PathConfig.SYS_TUXEDO_KEYBOARD_FN_LOCK);
 
     getFnLockSupported = () => this.fnLock.isAvailable();
 

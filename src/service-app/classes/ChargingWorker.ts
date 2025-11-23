@@ -21,11 +21,12 @@ import { TuxedoControlCenterDaemon } from './TuxedoControlCenterDaemon';
 import { ChargingProfileController } from '../../common/classes/ChargingProfileController';
 import { ChargingPriorityController } from '../../common/classes/ChargingPriorityController';
 import { ChargeType, PowerSupplyController } from '../../common/classes/PowerSupplyController';
+import { PathConfig } from '../../common/classes/PathConfig';
 
 export class ChargingWorker extends DaemonWorker {
 
-    private chargingProfile = new ChargingProfileController('/sys/devices/platform/tuxedo_keyboard/charging_profile');
-    private chargingPriority = new ChargingPriorityController('/sys/devices/platform/tuxedo_keyboard/charging_priority');
+    private chargingProfile = new ChargingProfileController(PathConfig.SYS_TUXEDO_KEYBOARD_CHARGING_PROFILE);
+    private chargingPriority = new ChargingPriorityController(PathConfig.SYS_TUXEDO_KEYBOARD_CHARGING_PRIORITY);
 
     constructor(tccd: TuxedoControlCenterDaemon) {
         super(10000, tccd);

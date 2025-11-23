@@ -21,6 +21,7 @@ import { ScalingDriver } from "../../common/classes/LogicalCpuController";
 import { DMIController } from "../../common/classes/DMIController";
 import { SysFsService } from "./sys-fs.service";
 import { TccDBusClientService } from "./tcc-dbus-client.service";
+import { PathConfig } from "../../common/classes/PathConfig";
 import { IdGpuInfo, IiGpuInfo } from "src/common/models/TccGpuValues";
 import { TimeData } from "src/service-app/classes/TccDBusInterface";
 import { deviceSystemProfileInfo, SystemProfileInfo } from "src/common/models/ISystemProfileInfo";
@@ -38,7 +39,7 @@ export class CompatibilityService {
         private sysfs: SysFsService,
     ) {
         // TODO: Manual read until general device id get merged
-        const dmi = new DMIController("/sys/class/dmi/id");
+        const dmi = new DMIController(PathConfig.SYS_DMI);
         const deviceName = dmi.productSKU.readValueNT();
         const boardVendor = dmi.boardVendor.readValueNT();
         const chassisVendor = dmi.chassisVendor.readValueNT();

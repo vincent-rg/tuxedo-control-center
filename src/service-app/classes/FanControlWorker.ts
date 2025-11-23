@@ -22,6 +22,7 @@ import {
     SysFsPropertyInteger,
     SysFsPropertyString,
 } from "../../common/classes/SysFsProperties";
+import { PathConfig } from "../../common/classes/PathConfig";
 import {
     TuxedoIOAPI as ioAPI,
     TuxedoIOAPI,
@@ -64,7 +65,7 @@ export class FanControlWorker extends DaemonWorker {
 
     private platformAvailable: boolean;
     private platformPath: string =
-        "/sys/bus/platform/devices/tuxedo_fan_control";
+        PathConfig.SYS_TUXEDO_FAN_CONTROL;
 
     private hwmonPath: string;
 
@@ -492,13 +493,13 @@ export class FanControlWorker extends DaemonWorker {
     }
     private async getHwmonTuxiPath(): Promise<string | undefined> {
         return await execCommand(
-            "grep -rl '^tuxedo_tuxi_sensors$' /sys/class/hwmon/*/name | sed 's|/name$||'"
+            "grep -rl '^tuxedo_tuxi_sensors$' " + PathConfig.SYS_HWMON + "/*/name | sed 's|/name$||'"
         );
     }
 
     private async getHwmonPwmPath(): Promise<string | undefined> {
         return await execCommand(
-            "grep -rl '^tuxedo$' /sys/class/hwmon/*/name | sed 's|/name$||'"
+            "grep -rl '^tuxedo$' " + PathConfig.SYS_HWMON + "/*/name | sed 's|/name$||'"
         );
     }
 

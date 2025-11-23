@@ -19,6 +19,7 @@
 import * as path from 'path';
 import { SysFsController } from './SysFsController';
 import { SysFsPropertyBoolean, SysFsPropertyInteger, SysFsPropertyNumListExplicit, SysFsPropertyString } from './SysFsProperties';
+import { PathConfig } from './PathConfig';
 
 export enum PowerSupplyType {
     Mains = 'Mains',
@@ -61,10 +62,10 @@ export class PowerSupplyController extends SysFsController {
     public readonly chargeControlEndAvailableThresholds = new SysFsPropertyNumListExplicit(path.join(this.basePath, 'charge_control_end_available_thresholds'));
 
     public static async getPowerSupplyBatteries() {
-        const psDevices = SysFsController.getDeviceList('/sys/class/power_supply');
+        const psDevices = SysFsController.getDeviceList(PathConfig.SYS_POWER_SUPPLY);
         const ctrlBatteries: PowerSupplyController[] = [];
         for (const devString of psDevices) {
-            const ps = new PowerSupplyController('/sys/class/power_supply/' + devString);
+            const ps = new PowerSupplyController(PathConfig.SYS_POWER_SUPPLY + '/' + devString);
             try {
                 if ((await ps.type.readValueA()).trim() === 'Battery') {
                     ctrlBatteries.push(ps);

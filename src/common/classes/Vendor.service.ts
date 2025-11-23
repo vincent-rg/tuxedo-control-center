@@ -1,5 +1,6 @@
 import { Injectable } from "@angular/core";
 import { execCommandAsync } from "./Utils";
+import { PathConfig } from "./PathConfig";
 
 @Injectable({
     providedIn: "root",
@@ -26,7 +27,7 @@ export class VendorService {
 
     private async checkCpuVendor(): Promise<string> {
         const stdout = (
-            await execCommandAsync("cat /proc/cpuinfo | grep vendor_id")
+            await execCommandAsync("cat " + PathConfig.PROC_CPUINFO + " | grep vendor_id")
         ).toString();
 
         const outputLines = stdout.split("\n");

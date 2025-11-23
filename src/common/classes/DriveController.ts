@@ -23,10 +23,11 @@ import * as child_process from 'child_process';
 
 import { IDrive } from "../models/IDrive";
 import { SysFsPropertyInteger } from './SysFsProperties';
+import { PathConfig } from './PathConfig';
 
 export class DriveController {
 
-    private static _sysBlockDir = "/sys/block/";
+    private static _sysBlockDir = PathConfig.SYS_BLOCK + "/";
 
     public static async getDrives(includeLoopDevices: boolean = false): Promise<IDrive[]> {
         let drives: IDrive[] = [];

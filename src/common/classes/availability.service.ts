@@ -6,6 +6,7 @@ import {
 } from "./DeviceIDs";
 import { countLines, execCommandSync } from "./Utils";
 import { IDeviceCounts } from "src/common/models/TccGpuValues";
+import { PathConfig } from "./PathConfig";
 
 @Injectable({
     providedIn: "root",
@@ -55,14 +56,14 @@ export class AvailabilityService {
 
     // using || to return a success code to avoid throwing an error in execCmdSync and : means no-op
     private countDevicesMatchingPattern(pattern: string): number {
-        const grepCmd = `grep -lP '${pattern}' /sys/bus/pci/devices/*/uevent || :`;
+        const grepCmd = `grep -lP '${pattern}' ` + PathConfig.SYS_PCI_DEVICES + `/*/uevent || :`;
         const output = execCommandSync(grepCmd);
         return countLines(output);
     }
 
     private countNvidiaDevices(): number {
         const nvidiaVendorId = "10DE";
-        const grepCmd = `grep -lx '0x${nvidiaVendorId.toLowerCase()}' /sys/bus/pci/devices/*/vendor || :`;
+        const grepCmd = `grep -lx '0x${nvidiaVendorId.toLowerCase()}' ` + PathConfig.SYS_PCI_DEVICES + `/*/vendor || :`;
         const output = execCommandSync(grepCmd);
 
         // count multiple paths as one
