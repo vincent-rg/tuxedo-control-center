@@ -2,12 +2,21 @@
 
 ## [Unreleased]
 
+### Added
+- Centralized PathConfig class for all system path management
+- Environment variable support for development/testing with mock system paths:
+  - TCC_SYS_BASE: Override /sys paths
+  - TCC_PROC_BASE: Override /proc paths
+  - TCC_DEV_BASE: Override /dev paths
+- Add per-core online/offline state and min/max scaling frequency
+
 ### Changed
-- Updated Node.js version from 14 to 18
+- Updated Node.js version from 14 to 18 (14 is incompatible with python 3.12+)
 - Use unbundled node in development mode to avoid pkg segfault issues
 - Refactored config.service.ts to use getTccdExecPath() method for cleaner code
 - Keep @types/node at version 14 for TypeScript 4.0 compatibility (runtime uses Node 18)
 - Add OpenSSL legacy provider flag to Angular build scripts for Node 18 compatibility
+- All system path references now use centralized PathConfig class
 
 ## [2.1.21] - 2025-11-26
 ### Added
