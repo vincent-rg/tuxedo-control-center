@@ -23,6 +23,7 @@ import * as child_process from 'child_process';
 import { SIGINT, SIGTERM } from 'constants';
 import { SingleProcess } from './SingleProcess';
 import { TccPaths } from '../../common/classes/TccPaths';
+import { PathConfig } from '../../common/classes/PathConfig';
 import { ConfigHandler } from '../../common/classes/ConfigHandler';
 import { defaultSettings, ITccSettings, ProfileStates } from '../../common/models/TccSettings';
 import { generateProfileId, ITccProfile } from '../../common/models/TccProfile';
@@ -499,7 +500,7 @@ export class TuxedoControlCenterDaemon extends SingleProcess {
 
     identifyDevice(): TUXEDODevice {
 
-        const dmi = new DMIController('/sys/class/dmi/id');
+        const dmi = new DMIController(PathConfig.SYS_DMI);
         const productSKU = dmi.productSKU.readValueNT();
         const boardName = dmi.boardName.readValueNT();
         const modInfo = new ModuleInfo();
@@ -646,7 +647,7 @@ export class TuxedoControlCenterDaemon extends SingleProcess {
             profile.description = '';
         }
 
-        const cpu: CpuController = new CpuController('/sys/devices/system/cpu');
+        const cpu: CpuController = new CpuController(PathConfig.SYS_CPU);
         if (profile.cpu.onlineCores === undefined) {
             profile.cpu.onlineCores = cpu.cores.length;
         }
