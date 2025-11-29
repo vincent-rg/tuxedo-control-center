@@ -61,7 +61,9 @@ const maxEnergySave: ITccProfile = {
         scalingMaxFrequency: undefined,
         governor: 'powersave', // unused: see CpuWorker.ts->applyCpuProfile(...)
         energyPerformancePreference: 'balance_performance',
-        noTurbo: false
+        noTurbo: false,
+        mode: 'basic',  // Default to basic mode
+        perCoreConfig: undefined  // Will be filled by daemon
     },
     webcam: {
         status: true,
@@ -100,7 +102,9 @@ const silent: ITccProfile = {
         scalingMaxFrequency: undefined,
         governor: 'powersave', // unused: see CpuWorker.ts->applyCpuProfile(...)
         energyPerformancePreference: 'balance_performance',
-        noTurbo: false
+        noTurbo: false,
+        mode: 'basic',  // Default to basic mode
+        perCoreConfig: undefined  // Will be filled by daemon
     },
     webcam: {
         status: true,
@@ -139,7 +143,9 @@ const office: ITccProfile = {
         scalingMaxFrequency: undefined,
         governor: 'powersave', // unused: see CpuWorker.ts->applyCpuProfile(...)
         energyPerformancePreference: 'balance_performance',
-        noTurbo: false
+        noTurbo: false,
+        mode: 'basic',  // Default to basic mode
+        perCoreConfig: undefined  // Will be filled by daemon
     },
     webcam: {
         status: true,
@@ -178,7 +184,9 @@ const highPerformance: ITccProfile = {
         scalingMaxFrequency: undefined,
         governor: 'powersave', // unused: see CpuWorker.ts->applyCpuProfile(...)
         energyPerformancePreference: 'balance_performance',
-        noTurbo: false
+        noTurbo: false,
+        mode: 'basic',  // Default to basic mode
+        perCoreConfig: undefined  // Will be filled by daemon
     },
     webcam: {
         status: true,
@@ -217,7 +225,9 @@ export const defaultCustomProfile: ITccProfile = {
         scalingMaxFrequency: undefined,
         governor: 'powersave', // unused: see CpuWorker.ts->applyCpuProfile(...)
         energyPerformancePreference: 'balance_performance',
-        noTurbo: false
+        noTurbo: false,
+        mode: 'basic',  // Default to basic mode
+        perCoreConfig: undefined  // Will be filled by daemon
     },
     webcam: {
         status: true,
@@ -256,7 +266,9 @@ export const defaultMobileCustomProfileTDP: ITccProfile = {
         scalingMaxFrequency: 3500000,
         governor: 'powersave', // unused: see CpuWorker.ts->applyCpuProfile(...)
         energyPerformancePreference: 'balance_performance',
-        noTurbo: false
+        noTurbo: false,
+        mode: 'basic',  // Default to basic mode
+        perCoreConfig: undefined  // Will be filled by daemon
     },
     webcam: {
         status: true,
@@ -295,7 +307,9 @@ export const defaultMobileCustomProfileCl: ITccProfile = {
         scalingMaxFrequency: 3500000,
         governor: 'powersave', // unused: see CpuWorker.ts->applyCpuProfile(...)
         energyPerformancePreference: 'balance_performance',
-        noTurbo: false
+        noTurbo: false,
+        mode: 'basic',  // Default to basic mode
+        perCoreConfig: undefined  // Will be filled by daemon
     },
     webcam: {
         status: true,
@@ -335,7 +349,9 @@ const highPerformance25WcTGP: ITccProfile = {
         scalingMaxFrequency: undefined,
         governor: 'powersave', // unused: see CpuWorker.ts->applyCpuProfile(...)
         energyPerformancePreference: 'balance_performance',
-        noTurbo: false
+        noTurbo: false,
+        mode: 'basic',  // Default to basic mode
+        perCoreConfig: undefined  // Will be filled by daemon
     },
     webcam: {
         status: true,
@@ -374,7 +390,9 @@ export const defaultCustomProfile25WcTGP: ITccProfile = {
         scalingMaxFrequency: undefined,
         governor: 'powersave', // unused: see CpuWorker.ts->applyCpuProfile(...)
         energyPerformancePreference: 'balance_performance',
-        noTurbo: false
+        noTurbo: false,
+        mode: 'basic',  // Default to basic mode
+        perCoreConfig: undefined  // Will be filled by daemon
     },
     webcam: {
         status: true,
