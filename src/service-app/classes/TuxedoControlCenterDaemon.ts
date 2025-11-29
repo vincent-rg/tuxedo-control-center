@@ -26,7 +26,7 @@ import { TccPaths } from '../../common/classes/TccPaths';
 import { PathConfig } from '../../common/classes/PathConfig';
 import { ConfigHandler } from '../../common/classes/ConfigHandler';
 import { defaultSettings, ITccSettings, ProfileStates } from '../../common/models/TccSettings';
-import { generateProfileId, ITccProfile } from '../../common/models/TccProfile';
+import { generateProfileId, IPerCoreConfig, ITccProfile } from '../../common/models/TccProfile';
 import { DaemonWorker } from './DaemonWorker';
 import { DaemonListener } from './DaemonListener';
 import { DisplayBacklightWorker } from './DisplayBacklightWorker';
@@ -46,7 +46,7 @@ import { ODMPowerLimitWorker } from './ODMPowerLimitWorker';
 import { CpuController } from '../../common/classes/CpuController';
 import { DMIController } from '../../common/classes/DMIController';
 import { TUXEDODevice, defaultCustomProfile } from '../../common/models/DefaultProfiles';
-import { ScalingDriver } from '../../common/classes/LogicalCpuController';
+import { LogicalCpuController, ScalingDriver } from '../../common/classes/LogicalCpuController';
 import { ChargingWorker } from './ChargingWorker';
 import { WebcamPreset } from 'src/common/models/TccWebcamSettings';
 import { GpuInfoWorker } from "./GpuInfoWorker";
@@ -634,6 +634,28 @@ export class TuxedoControlCenterDaemon extends SingleProcess {
         this.dbusData.activeProfileJSON = JSON.stringify(this.fillDeviceSpecificDefaults(this.getCurrentProfile()));
     }
 
+    /**
+     * Get maximum frequency for a specific CPU core, handling boost frequencies
+     * @param cpu CpuController instance
+     * @param core LogicalCpuController for the specific core
+     * @returns Maximum frequency in Hz
+     */
+    private getCoreMaxFreq(cpu: CpuController, core: LogicalCpuController): number {
+        const scalingAvailableFrequencies = core.scalingAvailableFrequencies.readValueNT();
+        const scalingdriver = core.scalingDriver.readValueNT();
+        let maxFreq = scalingAvailableFrequencies !== undefined ?
+                      scalingAvailableFrequencies[0] :
+                      core.cpuinfoMaxFreq.readValueNT();
+
+        // Add boost offset for acpi_cpufreq driver
+        const boost = cpu.boost.readValueNT();
+        if (boost !== undefined && scalingdriver === ScalingDriver.acpi_cpufreq) {
+            maxFreq += 1000000;
+        }
+
+        return maxFreq;
+    }
+
     fillDeviceSpecificDefaults(inputProfile: ITccProfile): ITccProfile {
         const profile: ITccProfile = JSON.parse(JSON.stringify(inputProfile));
         const dev: TUXEDODevice = this.identifyDevice();
@@ -656,18 +678,19 @@ export class TuxedoControlCenterDaemon extends SingleProcess {
             profile.cpu.useMaxPerfGov = false;
         }
 
+        // Set default mode if not specified (backward compatibility)
+        if (profile.cpu.mode === undefined) {
+            profile.cpu.mode = 'basic';
+        }
+
+        // Fill basic mode defaults (using CPU0 as reference)
         const minFreq = cpu.cores[0].cpuinfoMinFreq.readValueNT();
         if (profile.cpu.scalingMinFrequency === undefined || profile.cpu.scalingMinFrequency < minFreq) {
             profile.cpu.scalingMinFrequency = minFreq;
         }
 
-        const scalingAvailableFrequencies = cpu.cores[0].scalingAvailableFrequencies.readValueNT();
-        const scalingdriver = cpu.cores[0].scalingDriver.readValueNT()
-        let maxFreq = scalingAvailableFrequencies !== undefined ? scalingAvailableFrequencies[0] : cpu.cores[0].cpuinfoMaxFreq.readValueNT();
+        const maxFreq = this.getCoreMaxFreq(cpu, cpu.cores[0]);
         const boost = cpu.boost.readValueNT();
-        if (boost !== undefined && scalingdriver === ScalingDriver.acpi_cpufreq) {
-            maxFreq += 1000000;
-        }
         const reducedAvailableFreq = boost === undefined ?
                                          cpu.cores[0].getReducedAvailableFreqNT() :
                                          cpu.cores[0].cpuinfoMaxFreq.readValueNT();
@@ -683,6 +706,50 @@ export class TuxedoControlCenterDaemon extends SingleProcess {
         } else if (profile.cpu.scalingMaxFrequency > maxFreq) {
             profile.cpu.scalingMaxFrequency = maxFreq;
         }
+
+        // Fill per-core config array (always populated, even in basic mode)
+        if (profile.cpu.perCoreConfig === undefined) {
+            profile.cpu.perCoreConfig = [];
+        }
+
+        // Fill missing or invalid per-core configs using each core's hardware limits
+        for (let i = 0; i < cpu.cores.length; i++) {
+            const core = cpu.cores[i];
+            let coreConfig = profile.cpu.perCoreConfig.find(c => c.cpuId === i);
+
+            if (!coreConfig) {
+                // Create new per-core config with defaults from this core's hardware
+                const coreMinFreq = core.cpuinfoMinFreq.readValueNT();
+                const coreMaxFreq = this.getCoreMaxFreq(cpu, core);
+
+                coreConfig = {
+                    cpuId: i,
+                    online: i < profile.cpu.onlineCores,  // Online if within basic onlineCores count
+                    scalingMinFrequency: coreMinFreq,
+                    scalingMaxFrequency: coreMaxFreq
+                };
+                profile.cpu.perCoreConfig.push(coreConfig);
+            } else {
+                // Validate existing per-core config against hardware limits
+                const coreMinFreq = core.cpuinfoMinFreq.readValueNT();
+                const coreMaxFreq = this.getCoreMaxFreq(cpu, core);
+
+                // Clamp to hardware limits
+                if (coreConfig.scalingMinFrequency < coreMinFreq) {
+                    coreConfig.scalingMinFrequency = coreMinFreq;
+                }
+                if (coreConfig.scalingMaxFrequency > coreMaxFreq) {
+                    coreConfig.scalingMaxFrequency = coreMaxFreq;
+                }
+                // Ensure min <= max
+                if (coreConfig.scalingMinFrequency > coreConfig.scalingMaxFrequency) {
+                    coreConfig.scalingMinFrequency = coreConfig.scalingMaxFrequency;
+                }
+            }
+        }
+
+        // Sort perCoreConfig by cpuId for consistency
+        profile.cpu.perCoreConfig.sort((a, b) => a.cpuId - b.cpuId);
 
         if (profile.cpu.governor === undefined) {
             profile.cpu.governor = defaultCustomProfile.cpu.governor;
