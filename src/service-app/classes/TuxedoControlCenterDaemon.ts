@@ -46,7 +46,7 @@ import { ODMPowerLimitWorker } from './ODMPowerLimitWorker';
 import { CpuController } from '../../common/classes/CpuController';
 import { DMIController } from '../../common/classes/DMIController';
 import { TUXEDODevice, defaultCustomProfile } from '../../common/models/DefaultProfiles';
-import { LogicalCpuController, ScalingDriver } from '../../common/classes/LogicalCpuController';
+import { ScalingDriver } from '../../common/classes/LogicalCpuController';
 import { ChargingWorker } from './ChargingWorker';
 import { WebcamPreset } from 'src/common/models/TccWebcamSettings';
 import { GpuInfoWorker } from "./GpuInfoWorker";
@@ -637,10 +637,11 @@ export class TuxedoControlCenterDaemon extends SingleProcess {
     /**
      * Get maximum frequency for a specific CPU core, handling boost frequencies
      * @param cpu CpuController instance
-     * @param core LogicalCpuController for the specific core
+     * @param coreIndex Index of the core (0-based)
      * @returns Maximum frequency in Hz
      */
-    private getCoreMaxFreq(cpu: CpuController, core: LogicalCpuController): number {
+    private getCoreMaxFreq(cpu: CpuController, coreIndex: number): number {
+        const core = cpu.cores[coreIndex];
         const scalingAvailableFrequencies = core.scalingAvailableFrequencies.readValueNT();
         const scalingdriver = core.scalingDriver.readValueNT();
         let maxFreq = scalingAvailableFrequencies !== undefined ?
@@ -689,7 +690,7 @@ export class TuxedoControlCenterDaemon extends SingleProcess {
             profile.cpu.scalingMinFrequency = minFreq;
         }
 
-        const maxFreq = this.getCoreMaxFreq(cpu, cpu.cores[0]);
+        const maxFreq = this.getCoreMaxFreq(cpu, 0);
         const boost = cpu.boost.readValueNT();
         const reducedAvailableFreq = boost === undefined ?
                                          cpu.cores[0].getReducedAvailableFreqNT() :
@@ -720,7 +721,7 @@ export class TuxedoControlCenterDaemon extends SingleProcess {
             if (!coreConfig) {
                 // Create new per-core config with defaults from this core's hardware
                 const coreMinFreq = core.cpuinfoMinFreq.readValueNT();
-                const coreMaxFreq = this.getCoreMaxFreq(cpu, core);
+                const coreMaxFreq = this.getCoreMaxFreq(cpu, i);
 
                 coreConfig = {
                     cpuId: i,
@@ -732,7 +733,7 @@ export class TuxedoControlCenterDaemon extends SingleProcess {
             } else {
                 // Validate existing per-core config against hardware limits
                 const coreMinFreq = core.cpuinfoMinFreq.readValueNT();
-                const coreMaxFreq = this.getCoreMaxFreq(cpu, core);
+                const coreMaxFreq = this.getCoreMaxFreq(cpu, i);
 
                 // Clamp to hardware limits
                 if (coreConfig.scalingMinFrequency < coreMinFreq) {
