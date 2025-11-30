@@ -818,25 +818,29 @@ along with TUXEDO Control Center.  If not, see <https://www.gnu.org/licenses/>.
                                     </td>
                                     <td>
                                         <content class="value" [hidden]="editProfile">{{ formatCpuFrequency(coreGroup.get('scalingMinFrequency').value) }}</content>
-                                        <mat-slider
-                                            [hidden]="!editProfile"
-                                            formControlName="scalingMinFrequency"
-                                            [min]="getCpuMinFreq(i)"
-                                            [max]="getCpuMaxFreq(i)"
-                                            step="100000"
-                                            color="primary">
-                                        </mat-slider>
+                                        <div [hidden]="!editProfile" class="slider-with-value">
+                                            <mat-slider
+                                                formControlName="scalingMinFrequency"
+                                                [min]="getCpuMinFreq(i)"
+                                                [max]="getCpuMaxFreq(i)"
+                                                step="100000"
+                                                color="primary">
+                                            </mat-slider>
+                                            <span class="slider-value">{{ formatCpuFrequency(coreGroup.get('scalingMinFrequency').value) }} GHz</span>
+                                        </div>
                                     </td>
                                     <td>
                                         <content class="value" [hidden]="editProfile">{{ formatCpuFrequency(coreGroup.get('scalingMaxFrequency').value) }}</content>
-                                        <mat-slider
-                                            [hidden]="!editProfile"
-                                            formControlName="scalingMaxFrequency"
-                                            [min]="getCpuMinFreq(i)"
-                                            [max]="getCpuMaxFreq(i)"
-                                            step="100000"
-                                            color="primary">
-                                        </mat-slider>
+                                        <div [hidden]="!editProfile" class="slider-with-value">
+                                            <mat-slider
+                                                formControlName="scalingMaxFrequency"
+                                                [min]="getCpuMinFreq(i)"
+                                                [max]="getCpuMaxFreq(i)"
+                                                step="100000"
+                                                color="primary">
+                                            </mat-slider>
+                                            <span class="slider-value">{{ formatCpuFrequency(coreGroup.get('scalingMaxFrequency').value) }} GHz</span>
+                                        </div>
                                     </td>
                                     <td>
                                         {{ formatCpuFrequency(getCpuMinFreq(i)) }} -
