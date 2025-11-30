@@ -144,15 +144,22 @@ mat-grid-tile {
     display: none;
 }
 
+mat-radio-group.cpu-config-mode {
+    mat-radio-button {
+        margin-right: 16px;
+    }
+}
+
 .per-core-config-table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 10px;
 
     th, td {
-        padding: 8px;
+        padding: 0px 8px;
         text-align: left;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        vertical-align: middle;
     }
 
     th {
@@ -161,11 +168,23 @@ mat-grid-tile {
     }
 
     td {
-        font-size: 0.95em;
+        font-size: 1.0em;
     }
 
     mat-slider {
         width: 150px;
+        display: block;
+        height: 32px;  // Reduce from default 48px
+
+        // Override Material's internal positioning
+        ::ng-deep .mat-slider-wrapper {
+            top: 16px;  // Center the track vertically (32px / 2)
+        }
+
+        ::ng-deep .mat-slider-track-wrapper,
+        ::ng-deep .mat-slider-ticks-container {
+            height: 2px;
+        }
     }
 
     mat-checkbox {
@@ -174,12 +193,18 @@ mat-grid-tile {
 
     .slider-with-value {
         display: flex;
-        flex-direction: column;
-        gap: 4px;
+        align-items: center;
+        gap: 8px;
+
+        mat-slider {
+            flex: 0 0 120px;
+        }
 
         .slider-value {
-            font-size: 0.9em;
-            color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+            font-size: 1.0em;
+            color: inherit;
+            font-weight: 500;
+            white-space: nowrap;
         }
     }
 }
