@@ -469,7 +469,7 @@ export class CpuWorker extends DaemonWorker {
             }
 
             // Route to mode-specific implementation for frequencies and online/offline
-            if (profile && profile.cpu && profile.cpu.mode === 'per-core') {
+            if (profile.cpu.mode === 'per-core') {
                 this.applyCpuProfilePerCore(profile);
             } else {
                 this.applyCpuProfileBasic(profile);
@@ -587,13 +587,42 @@ export class CpuWorker extends DaemonWorker {
 
         // Route to mode-specific validation for frequencies and online/offline
         let cpuFreqValidConfig: boolean;
-        if (profile && profile.cpu && profile.cpu.mode === 'per-core') {
+        if (profile.cpu.mode === 'per-core') {
             cpuFreqValidConfig = this.validateCpuFreqPerCore(profile);
         } else {
             cpuFreqValidConfig = this.validateCpuFreqBasic(profile);
         }
 
         // Validate common settings: governor and EPP for all online cores
+        if (!this.validateCoreCommonSettings(profile)) {
+            cpuFreqValidConfig = false;
+        }
+
+        // Validate common setting: noTurbo
+        if (this.cpuCtrl.intelPstate.noTurbo.isAvailable() && this.cpuCtrl.intelPstate.noTurbo.isWritable()) {
+            const currentNoTurbo = this.cpuCtrl.intelPstate.noTurbo.readValue();
+            const profileNoTurbo = profile.cpu.noTurbo;
+
+            if (profileNoTurbo !== undefined && currentNoTurbo !== profileNoTurbo) {
+                cpuFreqValidConfig = false;
+                this.tccd.logLine('CpuWorker: Unexpected value noTurbo => \''
+                    + currentNoTurbo + '\' instead of \'' + profileNoTurbo + '\'');
+            }
+        }
+
+        return cpuFreqValidConfig;
+    }
+
+    /**
+     * Validates common CPU settings (governor and EPP) for all online cores
+     * These settings apply to both basic and per-core modes
+     *
+     * @param profile Profile containing expected governor and EPP settings
+     * @returns true if all cores match expected settings, false otherwise
+     */
+    private validateCoreCommonSettings(profile: ITccProfile): boolean {
+        let allCoresValid = true;
+
         for (const core of this.cpuCtrl.cores) {
             if (core.coreIndex !== 0 && !core.online.readValue()) {
                 // Skip offline cores
@@ -605,7 +634,7 @@ export class CpuWorker extends DaemonWorker {
                 const currentGovernor = core.scalingGovernor.readValue();
                 const governorProfile = profile.cpu.governor;
                 if (governorProfile !== undefined && currentGovernor !== governorProfile) {
-                    cpuFreqValidConfig = false;
+                    allCoresValid = false;
                     this.tccd.logLine('CpuWorker: Unexpected value core' + core.coreIndex + ' scaling governor '
                         + ' => \'' + currentGovernor + '\' instead of \'' + governorProfile + '\'');
                 }
@@ -625,29 +654,15 @@ export class CpuWorker extends DaemonWorker {
                     performancePreferenceProfile = "performance"
                 }
                 // Skip check if not set in profile or is 'default'
-                if (performancePreferenceProfile !== undefined && performancePreferenceProfile !== 'default') {
-                    if (currentPerformancePreference !== performancePreferenceProfile) {
-                        cpuFreqValidConfig = false;
-                        this.tccd.logLine('CpuWorker: Unexpected value core' + core.coreIndex + ' energy performance preference => \''
-                            + currentPerformancePreference + '\' instead of \'' + performancePreferenceProfile + '\'');
-                    }
+                if (performancePreferenceProfile !== undefined && performancePreferenceProfile !== 'default' && currentPerformancePreference !== performancePreferenceProfile) {
+                    allCoresValid = false;
+                    this.tccd.logLine('CpuWorker: Unexpected value core' + core.coreIndex + ' energy performance preference => \''
+                        + currentPerformancePreference + '\' instead of \'' + performancePreferenceProfile + '\'');
                 }
             }
         }
 
-        // Validate common setting: noTurbo
-        if (this.cpuCtrl.intelPstate.noTurbo.isAvailable() && this.cpuCtrl.intelPstate.noTurbo.isWritable()) {
-            const currentNoTurbo = this.cpuCtrl.intelPstate.noTurbo.readValue();
-            const profileNoTurbo = profile.cpu.noTurbo;
-
-            if (profileNoTurbo !== undefined && currentNoTurbo !== profileNoTurbo) {
-                cpuFreqValidConfig = false;
-                this.tccd.logLine('CpuWorker: Unexpected value noTurbo => \''
-                    + currentNoTurbo + '\' instead of \'' + profileNoTurbo + '\'');
-            }
-        }
-
-        return cpuFreqValidConfig;
+        return allCoresValid;
     }
 
     /**

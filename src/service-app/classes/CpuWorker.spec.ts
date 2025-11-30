@@ -22,6 +22,7 @@ const mock = require('mock-fs');
 import { CpuWorker } from './CpuWorker';
 import { TuxedoControlCenterDaemon } from './TuxedoControlCenterDaemon';
 import { IStaticCpuInfo, IRuntimeCpuInfo } from '../../common/models/TccCpuInfo';
+import { ITccProfile } from '../../common/models/TccProfile';
 
 describe('CpuWorker CPU Info Collection', () => {
 
@@ -327,6 +328,59 @@ describe('CpuWorker CPU Info Collection', () => {
 
             expect(secondTimestamp).toBeGreaterThanOrEqual(firstTimestamp);
             jasmine.clock().uninstall();
+        });
+
+        it('should handle undefined activeProfile gracefully with try/catch', () => {
+            // Don't set activeProfile - it should be undefined
+            // This simulates a bug where updateProfile() wasn't called
+
+            cpuWorker.onWork();
+
+            // Should have logged an error when trying to validate
+            expect(mockTccd.logLine).toHaveBeenCalledWith(
+                jasmine.stringMatching(/Error validating\/reapplying profile/)
+            );
+        });
+
+        it('should continue collecting runtime info even if profile validation fails', () => {
+            // Don't set activeProfile - validation will fail
+
+            cpuWorker.onWork();
+
+            // Runtime info collection should still succeed
+            expect(mockTccd.dbusData.runtimeCpuInfoJSON).toBeTruthy();
+            const parsedData: IRuntimeCpuInfo = JSON.parse(mockTccd.dbusData.runtimeCpuInfoJSON);
+            expect(parsedData.cpus.length).toBe(4);
+        });
+
+        it('should handle defined activeProfile without errors', () => {
+            // Create a minimal valid profile
+            const testProfile: ITccProfile = {
+                name: 'Test Profile',
+                cpu: {
+                    onlineCores: 3,
+                    useMaxPerfGov: false,
+                    scalingMinFrequency: 400000,
+                    scalingMaxFrequency: 4500000,
+                    governor: 'powersave',
+                    energyPerformancePreference: 'balance_performance',
+                    noTurbo: false,
+                    mode: 'basic'
+                }
+            } as ITccProfile;
+
+            // Set the active profile
+            cpuWorker.updateProfile(testProfile);
+
+            cpuWorker.onWork();
+
+            // Should not log a validation error (undefined profile access)
+            expect(mockTccd.logLine).not.toHaveBeenCalledWith(
+                jasmine.stringMatching(/Error validating\/reapplying profile.*Cannot read propert/)
+            );
+
+            // Runtime info collection should succeed
+            expect(mockTccd.dbusData.runtimeCpuInfoJSON).toBeTruthy();
         });
     });
 
