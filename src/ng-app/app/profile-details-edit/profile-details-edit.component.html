@@ -614,6 +614,27 @@ along with TUXEDO Control Center.  If not, see <https://www.gnu.org/licenses/>.
                         [matTooltip]="!this.config.getSettings().cpuSettingsEnabled ? this.config.cpuSettingsDisabledMessage : ''"
                     >
                         <div formGroupName="cpu">
+                            <!-- Configuration mode (always visible) -->
+                            <mat-grid-tile [colspan]="gridParams.headerSpan">
+                                <header i18n="@@cProfMgrDetailsCpuModeLabel">Configuration mode</header>
+                            </mat-grid-tile>
+                            <mat-grid-tile class="value" [colspan]="gridParams.valueSpan">
+                                <content class="value">
+                                    <span [hidden]="profileFormGroup.get('cpu').get('mode').value !== 'basic'" i18n="@@cProfMgrDetailsCpuModeBasic">Basic</span>
+                                    <span [hidden]="profileFormGroup.get('cpu').get('mode').value !== 'per-core'" i18n="@@cProfMgrDetailsCpuModePerCore">Per-core</span>
+                                </content>
+                            </mat-grid-tile>
+                            <mat-grid-tile [colspan]="gridParams.inputSpan">
+                                <content class="input" [hidden]="!editProfile">
+                                    <mat-radio-group formControlName="mode" color="primary">
+                                        <mat-radio-button value="basic" i18n="@@cProfMgrDetailsCpuModeBasic">Basic</mat-radio-button>
+                                        <mat-radio-button value="per-core" i18n="@@cProfMgrDetailsCpuModePerCore">Per-core</mat-radio-button>
+                                    </mat-radio-group>
+                                </content>
+                            </mat-grid-tile>
+
+                            <!-- Basic mode controls -->
+                            <ng-container *ngIf="profileFormGroup.get('cpu').get('mode').value === 'basic'">
                             <!-- Number of logical cores -->
                             <mat-grid-tile [colspan]="gridParams.headerSpan">
                                 <header i18n="@@cProfMgrDetailsNrCoresLabel">Number of logical cores</header>
@@ -765,8 +786,67 @@ along with TUXEDO Control Center.  If not, see <https://www.gnu.org/licenses/>.
                                     </mat-slider>
                                 </content>
                             </mat-grid-tile>
+                            </ng-container>
+                            <!-- End basic mode controls -->
                         </div>
                     </mat-grid-list>
+
+                    <!-- Per-core mode controls (outside grid for proper layout) -->
+                    <div *ngIf="profileFormGroup.get('cpu').get('mode').value === 'per-core'" formGroupName="cpu">
+                        <table class="per-core-config-table">
+                            <thead>
+                                <tr>
+                                    <th i18n="@@cProfMgrDetailsPerCoreCpuId">CPU</th>
+                                    <th i18n="@@cProfMgrDetailsPerCoreOnline">Online</th>
+                                    <th i18n="@@cProfMgrDetailsPerCoreMinFreq">Min Freq (GHz)</th>
+                                    <th i18n="@@cProfMgrDetailsPerCoreMaxFreq">Max Freq (GHz)</th>
+                                    <th i18n="@@cProfMgrDetailsPerCoreHwLimits">HW Limits (GHz)</th>
+                                </tr>
+                            </thead>
+                            <tbody formArrayName="perCoreConfig">
+                                <tr *ngFor="let coreGroup of getPerCoreConfigControls; let i = index" [formGroupName]="i">
+                                    <td>CPU {{ i }}</td>
+                                    <td>
+                                        <mat-checkbox
+                                            formControlName="online"
+                                            color="primary"
+                                            [hidden]="!editProfile || i === 0"
+                                            [matTooltip]="i === 0 ? 'CPU 0 must always be online' : ''">
+                                        </mat-checkbox>
+                                        <span [hidden]="editProfile || i === 0">{{ coreGroup.get('online').value ? 'Yes' : 'No' }}</span>
+                                        <span [hidden]="i !== 0">Yes</span>
+                                    </td>
+                                    <td>
+                                        <content class="value" [hidden]="editProfile">{{ formatCpuFrequency(coreGroup.get('scalingMinFrequency').value) }}</content>
+                                        <mat-slider
+                                            [hidden]="!editProfile"
+                                            formControlName="scalingMinFrequency"
+                                            [min]="getCpuMinFreq(i)"
+                                            [max]="getCpuMaxFreq(i)"
+                                            step="100000"
+                                            color="primary">
+                                        </mat-slider>
+                                    </td>
+                                    <td>
+                                        <content class="value" [hidden]="editProfile">{{ formatCpuFrequency(coreGroup.get('scalingMaxFrequency').value) }}</content>
+                                        <mat-slider
+                                            [hidden]="!editProfile"
+                                            formControlName="scalingMaxFrequency"
+                                            [min]="getCpuMinFreq(i)"
+                                            [max]="getCpuMaxFreq(i)"
+                                            step="100000"
+                                            color="primary">
+                                        </mat-slider>
+                                    </td>
+                                    <td>
+                                        {{ formatCpuFrequency(getCpuMinFreq(i)) }} -
+                                        {{ formatCpuFrequency(getCpuMaxFreq(i)) }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- End per-core mode controls -->
                 </div>
 
                 <div *ngIf="!compat.hideCTGP && nvidiaPowerCTRLAvailable && nvidiaPowerCTRLMaxPowerLimit > 0">

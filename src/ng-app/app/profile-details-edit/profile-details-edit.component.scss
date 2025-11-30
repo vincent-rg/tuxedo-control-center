@@ -143,3 +143,36 @@ mat-grid-tile {
 .hide-element {
     display: none;
 }
+
+.per-core-config-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+
+    th, td {
+        padding: 8px;
+        text-align: left;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    th {
+        font-weight: bold;
+        font-size: 1.05em;
+    }
+
+    td {
+        font-size: 0.95em;
+    }
+
+    mat-slider {
+        width: 150px;
+    }
+
+    mat-checkbox {
+        margin: 0;
+    }
+}
+
+.full-width {
+    width: 100%;
+}

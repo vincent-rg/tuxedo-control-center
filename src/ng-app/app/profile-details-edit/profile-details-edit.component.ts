@@ -442,7 +442,17 @@ export class ProfileDetailsEditComponent implements OnInit, OnDestroy {
     private createProfileFormGroup(profile: ITccProfile) {
 
         const displayGroup: FormGroup = this.fb.group(profile.display);
-        const cpuGroup: FormGroup = this.fb.group(profile.cpu);
+
+        // Create per-core config form array if it exists
+        const perCoreConfigArray: FormArray = profile.cpu.perCoreConfig
+            ? this.fb.array(profile.cpu.perCoreConfig.map(coreConfig => this.fb.group(coreConfig)))
+            : this.fb.array([]);
+
+        const cpuGroup: FormGroup = this.fb.group({
+            ...profile.cpu,
+            perCoreConfig: perCoreConfigArray
+        });
+
         const webcamGroup: FormGroup = this.fb.group(profile.webcam);
         const fanControlGroup: FormGroup = this.fb.group(profile.fan);
         const odmProfileGroup: FormGroup = this.fb.group(profile.odmProfile);
@@ -563,6 +573,20 @@ export class ProfileDetailsEditComponent implements OnInit, OnDestroy {
         const odmPowerLimits: FormGroup = this.profileFormGroup.controls.odmPowerLimits as FormGroup;
         const tdpValues: FormArray = odmPowerLimits.controls.tdpValues as FormArray;
         return tdpValues.controls;
+    }
+
+    get getPerCoreConfigControls() {
+        const cpuGroup: FormGroup = this.profileFormGroup.controls.cpu as FormGroup;
+        const perCoreConfig: FormArray = cpuGroup.controls.perCoreConfig as FormArray;
+        return perCoreConfig ? perCoreConfig.controls : [];
+    }
+
+    public getCpuMinFreq(cpuIndex: number): number {
+        return this.staticCpuInfo?.cpus?.[cpuIndex]?.cpuinfoMinFreq ?? 0;
+    }
+
+    public getCpuMaxFreq(cpuIndex: number): number {
+        return this.staticCpuInfo?.cpus?.[cpuIndex]?.cpuinfoMaxFreq ?? 0;
     }
 
     public sliderODMPowerLimitMinValue(sliderIndex: number): number {
