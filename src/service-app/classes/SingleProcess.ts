@@ -117,7 +117,7 @@ export class SingleProcess {
      *
      * @returns True if PID file is found and process is running, false otherwise
      */
-    private isRunning(): boolean {
+    protected isRunning(): boolean {
         let isRunning = true;
 
         const intPid = this.readPid();

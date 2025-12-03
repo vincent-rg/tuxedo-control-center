@@ -317,6 +317,8 @@ export class ConfigService implements OnDestroy {
                     this.updateConfigData();
                 }
                 resolve(success);
+            }).catch(error => {
+                resolve(false);
             });
         });
     }
