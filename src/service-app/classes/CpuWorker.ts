@@ -196,15 +196,20 @@ export class CpuWorker extends DaemonWorker {
             for (let i = 1; i < this.cpuCtrl.cores.length; i++) {
                 const core = this.cpuCtrl.cores[i];
 
-                // Check if online file is available and writable
-                if (!core.online.isAvailable() || !core.online.isWritable()) {
-                    this.tccd.logLine(`CpuWorker: Cannot control online state for CPU ${i} (not available or not writable)`);
+                // Check if online file is available
+                if (!core.online.isAvailable()) {
+                    this.tccd.logLine(`CpuWorker: Cannot control online state for CPU ${i} (not available)`);
                     continue;
                 }
 
                 try {
-                    // Only try to online if currently offline
+                    // Check if currently offline
                     if (!core.online.readValue()) {
+                        // CPU is offline, check if we can write to it
+                        if (!core.online.isWritable()) {
+                            this.tccd.logLine(`CpuWorker: Cannot online CPU ${i} (not writable)`);
+                            continue;
+                        }
                         core.online.writeValue(true);
                         this.tccd.logLine(`CpuWorker: Brought CPU ${i} online`);
                     }
@@ -239,20 +244,31 @@ export class CpuWorker extends DaemonWorker {
             for (let i = 1; i < this.cpuCtrl.cores.length; i++) {
                 const core = this.cpuCtrl.cores[i];
 
-                // Check if online file is available and writable
-                if (!core.online.isAvailable() || !core.online.isWritable()) {
+                // Check if online file is available
+                if (!core.online.isAvailable()) {
+                    this.tccd.logLine(`CpuWorker: Cannot restore CPU ${i} state (online file not available)`);
                     continue;
                 }
 
+                // Determine what state this CPU should be in
+                const shouldBeOnline = savedState.includes(i);
+
                 try {
-                    const shouldBeOnline = savedState.includes(i);
                     const currentlyOnline = core.online.readValue();
 
                     // Only write if state needs to change
                     if (shouldBeOnline && !currentlyOnline) {
+                        if (!core.online.isWritable()) {
+                            this.tccd.logLine(`CpuWorker: Cannot restore CPU ${i} to online (not writable)`);
+                            continue;
+                        }
                         core.online.writeValue(true);
                         this.tccd.logLine(`CpuWorker: Restored CPU ${i} to online`);
                     } else if (!shouldBeOnline && currentlyOnline) {
+                        if (!core.online.isWritable()) {
+                            this.tccd.logLine(`CpuWorker: Cannot restore CPU ${i} to offline (not writable)`);
+                            continue;
+                        }
                         core.online.writeValue(false);
                         this.tccd.logLine(`CpuWorker: Restored CPU ${i} to offline`);
                     }
