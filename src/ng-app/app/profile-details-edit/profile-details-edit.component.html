@@ -800,7 +800,6 @@ along with TUXEDO Control Center.  If not, see <https://www.gnu.org/licenses/>.
                                     <th i18n="@@cProfMgrDetailsPerCoreOnline">Online</th>
                                     <th i18n="@@cProfMgrDetailsPerCoreMinFreq">Min Freq (GHz)</th>
                                     <th i18n="@@cProfMgrDetailsPerCoreMaxFreq">Max Freq (GHz)</th>
-                                    <th i18n="@@cProfMgrDetailsPerCoreHwLimits">HW Limits (GHz)</th>
                                 </tr>
                             </thead>
                             <tbody formArrayName="perCoreConfig">
@@ -841,10 +840,6 @@ along with TUXEDO Control Center.  If not, see <https://www.gnu.org/licenses/>.
                                             </mat-slider>
                                             <span class="slider-value">{{ formatCpuFrequency(coreGroup.get('scalingMaxFrequency').value) }} GHz</span>
                                         </div>
-                                    </td>
-                                    <td>
-                                        {{ formatCpuFrequency(getCpuMinFreq(i)) }} -
-                                        {{ formatCpuFrequency(getCpuMaxFreq(i)) }}
                                     </td>
                                 </tr>
                             </tbody>
