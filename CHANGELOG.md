@@ -17,6 +17,12 @@
 - Keep @types/node at version 14 for TypeScript 4.0 compatibility (runtime uses Node 18)
 - Add OpenSSL legacy provider flag to Angular build scripts for Node 18 compatibility
 - All system path references now use centralized PathConfig class
+- Updated codelyzer from 5.1.2 to 6.0.0 for Angular 10 compatibility
+- Updated jasmine-core from 3.5.0 to 3.99.0 to resolve peer dependency conflicts
+
+### Fixed
+- npm install peer dependency conflicts preventing clean dependency installation
+- package-lock.json integrity checksum mismatches
 
 ## [2.1.21] - 2025-11-26
 ### Added
