@@ -18,6 +18,7 @@
  */
 
 import { CpuController } from '../../common/classes/CpuController';
+import { PathConfig } from '../../common/classes/PathConfig';
 import { ScalingDriver } from '../../common/classes/LogicalCpuController';
 import { TUXEDODevice } from '../../common/models/DefaultProfiles';
 import { FrequencyConfig, type IPerCoreConfig, type ITccProfile } from '../../common/models/TccProfile';
@@ -25,7 +26,7 @@ import { DaemonWorker } from './DaemonWorker';
 import type { TuxedoControlCenterDaemon } from './TuxedoControlCenterDaemon';
 
 export class CpuWorker extends DaemonWorker {
-    private readonly basePath: string = '/sys/devices/system/cpu';
+    private readonly basePath: string = PathConfig.SYS_CPU;
     private readonly cpuCtrl: CpuController;
 
     private readonly preferredAcpiFreqGovernors: string[] = ['ondemand', 'schedutil', 'conservative'];
