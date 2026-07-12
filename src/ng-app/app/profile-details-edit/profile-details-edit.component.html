@@ -835,7 +835,7 @@ along with TUXEDO Control Center.  If not, see <https://www.gnu.org/licenses/>.
                                     </mat-grid-tile>
                                     <mat-grid-tile [colspan]="gridParams.input + gridParams.undo">
                                         <content class="input" [hidden]="!editProfile">
-                                            <mat-radio-group formControlName="mode" color="primary">
+                                            <mat-radio-group formControlName="mode" color="primary" (change)="onCpuModeChange($event.value)">
                                                 <mat-radio-button value="basic" i18n="@@cProfMgrDetailsCpuModeBasic">Basic</mat-radio-button>
                                                 <mat-radio-button value="per-core" i18n="@@cProfMgrDetailsCpuModePerCore">Per-core</mat-radio-button>
                                             </mat-radio-group>

@@ -100,7 +100,10 @@ export class ProfileDetailsEditComponent implements OnInit, OnDestroy {
                 ? this.fb.array(profile.cpu.perCoreConfig.map((c: IPerCoreConfig) => this.fb.group(c)))
                 : this.fb.array([]);
             cpuGroup.setControl('perCoreConfig', newPerCoreArray);
-            this.profileFormGroup.reset(profile);
+            this.profileFormGroup.reset({
+                ...profile,
+                cpu: { ...profile.cpu, mode: profile.cpu.mode ?? 'basic' },
+            });
         }
 
         if (this.selectStateControl === undefined) {
@@ -491,7 +494,7 @@ export class ProfileDetailsEditComponent implements OnInit, OnDestroy {
         const perCoreConfigArray: FormArray = profile.cpu.perCoreConfig
             ? this.fb.array(profile.cpu.perCoreConfig.map((c: IPerCoreConfig) => this.fb.group(c)))
             : this.fb.array([]);
-        const cpuGroup: FormGroup = this.fb.group({ ...profile.cpu, perCoreConfig: perCoreConfigArray });
+        const cpuGroup: FormGroup = this.fb.group({ ...profile.cpu, mode: profile.cpu.mode ?? 'basic', perCoreConfig: perCoreConfigArray });
         const webcamGroup: FormGroup = this.fb.group(profile.webcam);
         const fanControlGroup: FormGroup = this.fb.group(profile.fan);
         const odmProfileGroup: FormGroup = this.fb.group(profile.odmProfile);
@@ -599,6 +602,21 @@ export class ProfileDetailsEditComponent implements OnInit, OnDestroy {
         const cpuGroup: FormGroup = this.profileFormGroup.controls.cpu as FormGroup;
         const perCoreConfig: FormArray = cpuGroup.controls.perCoreConfig as FormArray;
         return perCoreConfig ? perCoreConfig.controls : [];
+    }
+
+    public onCpuModeChange(mode: string): void {
+        if (mode !== 'per-core') { return; }
+        const cpuGroup = this.profileFormGroup.controls.cpu as FormGroup;
+        const perCoreConfig = cpuGroup.controls.perCoreConfig as FormArray;
+        if (perCoreConfig.length > 0) { return; }
+        for (const core of this.logicalCoreInfo) {
+            perCoreConfig.push(this.fb.group({
+                cpuId: core.index,
+                online: core.online,
+                scalingMinFrequency: core.cpuInfoMinFreq,
+                scalingMaxFrequency: core.cpuInfoMaxFreq,
+            }));
+        }
     }
 
     public getCpuMinFreq(cpuIndex: number): number {
