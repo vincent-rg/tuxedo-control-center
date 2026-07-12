@@ -225,7 +225,6 @@ export class CpuWorker extends DaemonWorker {
         for (const coreConfig of profile.cpu.perCoreConfig) {
             const coreIndex: number = coreConfig.cpuId;
             if (coreIndex == null || coreIndex < 0 || coreIndex >= this.cpuCtrl.cores.length) {
-                this.tccd.logLine(`CpuWorker: Invalid core index ${coreIndex}, skipping`);
                 continue;
             }
             const core = this.cpuCtrl.cores[coreIndex];

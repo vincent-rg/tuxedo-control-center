@@ -97,7 +97,7 @@ export class ProfileDetailsEditComponent implements OnInit, OnDestroy {
             // Rebuild perCoreConfig FormArray before reset — reset() won't add/remove array controls
             const cpuGroup: FormGroup = this.profileFormGroup.controls.cpu as FormGroup;
             const newPerCoreArray: FormArray = profile.cpu.perCoreConfig
-                ? this.fb.array(profile.cpu.perCoreConfig.map((c: IPerCoreConfig) => this.fb.group(c)))
+                ? this.fb.array(profile.cpu.perCoreConfig.map((c: IPerCoreConfig, i: number) => this.fb.group({ cpuId: i, ...c })))
                 : this.fb.array([]);
             cpuGroup.setControl('perCoreConfig', newPerCoreArray);
             this.profileFormGroup.reset({
@@ -492,7 +492,7 @@ export class ProfileDetailsEditComponent implements OnInit, OnDestroy {
     private createProfileFormGroup(profile: ITccProfile): FormGroup {
         const displayGroup: FormGroup = this.fb.group(profile.display);
         const perCoreConfigArray: FormArray = profile.cpu.perCoreConfig
-            ? this.fb.array(profile.cpu.perCoreConfig.map((c: IPerCoreConfig) => this.fb.group(c)))
+            ? this.fb.array(profile.cpu.perCoreConfig.map((c: IPerCoreConfig, i: number) => this.fb.group({ cpuId: i, ...c })))
             : this.fb.array([]);
         const cpuGroup: FormGroup = this.fb.group({ ...profile.cpu, mode: profile.cpu.mode ?? 'basic', perCoreConfig: perCoreConfigArray });
         const webcamGroup: FormGroup = this.fb.group(profile.webcam);
