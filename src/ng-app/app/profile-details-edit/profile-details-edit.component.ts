@@ -21,10 +21,10 @@ import { Component, EventEmitter, Input, type OnDestroy, type OnInit, Output, Vi
 // biome-ignore lint: injection token
 import {
     type AbstractControl,
-    type FormArray,
+    FormArray,
     FormBuilder,
     FormControl,
-    type FormGroup,
+    FormGroup,
     type ValidatorFn,
     Validators,
 } from '@angular/forms';
@@ -83,6 +83,23 @@ function setPerCoreFrequencyValidators(perCoreConfigArray: FormArray): void {
         coreGroup.controls.scalingMinFrequency.updateValueAndValidity({ onlySelf: true });
         coreGroup.controls.scalingMaxFrequency.updateValueAndValidity({ onlySelf: true });
     }
+}
+
+// Diagnostic helper: submitFormInput() silently no-ops when the form is invalid, with no
+// indication of which control caused it. Walks the control tree and returns "path: {errors}"
+// for every invalid leaf control, so that reason shows up in the console instead.
+function findInvalidControlPaths(control: AbstractControl, path: string = ''): string[] {
+    if (control instanceof FormGroup || control instanceof FormArray) {
+        const childPaths: string[] = [];
+        for (const key of Object.keys(control.controls)) {
+            childPaths.push(...findInvalidControlPaths(control.controls[key], path ? `${path}.${key}` : key));
+        }
+        return childPaths;
+    }
+    if (control.invalid) {
+        return [`${path}: ${JSON.stringify(control.errors)}`];
+    }
+    return [];
 }
 
 @Component({
@@ -465,6 +482,9 @@ export class ProfileDetailsEditComponent implements OnInit, OnDestroy {
                     this.utils.pageDisabled = false;
                 });
         } else {
+            console.error(
+                `ProfileDetailsEditComponent: submitFormInput: form invalid, not saving. Invalid controls: ${findInvalidControlPaths(this.profileFormGroup).join(', ')}`,
+            );
             this.profileFormProgress = false;
             this.utils.pageDisabled = false;
         }
