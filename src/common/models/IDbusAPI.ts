@@ -67,7 +67,6 @@ export enum DbusAPIFunctions {
     setChargeEndThreshold = 'setChargeEndThreshold',
     setChargeType = 'setChargeType',
     fanHwmonAvailable = 'fanHwmonAvailable',
-    getIsX11 = 'getIsX11',
     getDeviceJSON = 'getDeviceJSON',
     getNVIDIAPowerCTRLDefaultPowerLimit = 'getNVIDIAPowerCTRLDefaultPowerLimit',
     getNVIDIAPowerCTRLMaxPowerLimit = 'getNVIDIAPowerCTRLMaxPowerLimit',
